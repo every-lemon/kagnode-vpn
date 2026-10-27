@@ -1164,19 +1164,25 @@ def dependencies(backend):
     python = VENV / 'bin/python3'
     lock = backend.base / 'requirements.lock'
     backend.m.atomic(lock, REQUIREMENTS)
+    public_command=['sh','-c','umask 022; exec "$@"','vpn-dependencies']
     if not python.exists():
-        backend.m.command(['python3', '-m', 'venv', str(VENV)])
+        backend.m.command(public_command+['python3', '-m', 'venv', str(VENV)],timeout=600)
+    elif backend.m.command([str(python),'-m','pip','--version'],check=False).returncode:
+        # Interrupted ensurepip must be resumable even if bin/python3 already exists.
+        backend.m.command(public_command+[str(python),'-m','ensurepip','--upgrade'],timeout=600)
     marker = VENV / '.requirements-sha256'
     checksum = hashlib.sha256(REQUIREMENTS.encode()).hexdigest()
     if not marker.exists() or marker.read_text() != checksum:
-        backend.m.command([str(python), '-m', 'pip', 'install', '--disable-pip-version-check', '--only-binary=:all:', '--require-hashes', '-r', str(lock)])
+        backend.m.command(public_command+[str(python), '-m', 'pip', 'install', '--disable-pip-version-check', '--only-binary=:all:', '--require-hashes', '-r', str(lock)],timeout=600)
         backend.m.atomic(marker, checksum, 0o644)
     # Code directory and venv must be traversable by unprivileged HTTP workers.
     for directory in [VENV.parent, VENV] + [p for p in VENV.rglob('*') if p.is_dir()]:
-        directory.chmod(0o755)
+        if directory.stat().st_mode&0o777!=0o755:directory.chmod(0o755)
     for path in VENV.rglob('*'):
         if path.is_file() and not path.is_symlink():
-            path.chmod(0o755 if path.stat().st_mode & 0o111 else 0o644)
+            current=path.stat().st_mode&0o777
+            desired=0o755 if current&0o111 else 0o644
+            if current!=desired:path.chmod(desired)
     return python
 
 
