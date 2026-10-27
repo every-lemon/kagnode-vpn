@@ -9,7 +9,9 @@ class Doctor:
 
     def inspect(self):
         from vpn_web import unit_files
+        from vpn_tasks import interrupted
         checks=[]
+        checks.append({'id':'interrupted-system-task','ok':not interrupted(self.m),'repair':'interrupted-task'})
         for name, expected in unit_files().items():
             path=self.m.ETC/'systemd/system'/name
             checks.append({'id':'unit:'+name,'ok':path.is_file() and not path.is_symlink() and path.read_text()==expected,'repair':'owned-unit'})
@@ -72,6 +74,9 @@ class Doctor:
                 elif action=='managed-policy':
                     import vpn_policy
                     vpn_policy.apply(self.m.clients_backend())
+                elif action=='interrupted-task':
+                    from vpn_tasks import interrupted
+                    interrupted(self.m,recover=True)
                 elif action=='restart': restart=True
                 evidence['actions'].append(check['id'])
             # Operation lock excludes executing jobs. Never replay a native credential operation.

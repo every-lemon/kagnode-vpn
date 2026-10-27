@@ -580,9 +580,14 @@ class Controller:
             registry=self.backend.load(); record=registry['devices' if kind=='device' else 'users'].get(ident)
             if not record: raise WebError('Identity not found.')
             expiry=form.get('expires','')
-            record['expires']=datetime.datetime.fromisoformat(expiry).replace(tzinfo=datetime.timezone.utc).timestamp() if expiry else None
+            parsed=datetime.datetime.fromisoformat(expiry) if expiry else None
+            record['expires']=(parsed if parsed.tzinfo else parsed.replace(tzinfo=datetime.timezone.utc)).timestamp() if parsed else None
             record['disabled']=form.get('disabled')=='yes'
-            vpn_policy.apply(self.backend,registry_override=registry,commit=lambda:self.backend.save(registry))
+            try:
+                vpn_policy.apply(self.backend,registry_override=registry,commit=lambda:self.backend.save(registry))
+            except Exception:
+                vpn_policy.apply(self.backend)
+                raise
             self.disconnect_expired(registry)
             return {'message':'Identity state applied; inactive sessions disconnected.'}
         if action in ('maintenance-save','reboot'):
@@ -654,6 +659,7 @@ class Controller:
             self.backend.rename(form.get('kind'), form.get('id'), form.get('name', ''))
         elif action == 'assign':
             self.backend.assign(device, form.get('user'))
+            self.disconnect_expired()
         elif action == 'protocol-add':
             self.backend.protocol_add(device, form.get('protocol'), form.get('l2tp_password') or form.get('password') or None, username=form.get('username') or None)
         elif action == 'protocols-add':

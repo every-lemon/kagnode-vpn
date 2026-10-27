@@ -36,6 +36,26 @@ def execute(manager):
     with task_lock(manager):
         return _execute(manager)
 
+
+def interrupted(manager, recover=False):
+    """Detect abandoned work without replaying it or disturbing an active task."""
+    try:
+        with task_lock(manager):
+            path=manager.BASE/'system-task.json'
+            if not path.exists():return False
+            task=json.loads(path.read_text())
+            if task.get('status') not in ('queued','running') or time.time()-task.get('created',time.time())<60:
+                return False
+            result=manager.command(['systemctl','show','vpn-system-task.service','-p','ActiveState','--value'],check=False,timeout=5)
+            if result.returncode or result.stdout.strip() not in ('inactive','failed'):return False
+            if recover:
+                task.update(status='failed',finished=time.time(),result={'error':'System task interrupted. No operation was replayed; review diagnostics before submitting a new request.'})
+                manager.atomic(path,json.dumps(task))
+            return True
+    except ValueError:
+        # The live worker owns the lock, or its state needs deliberate inspection.
+        return False
+
 def _execute(manager):
     from vpn_web import Store
     from vpn_maintenance import Coordinator

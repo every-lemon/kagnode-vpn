@@ -222,7 +222,15 @@ class Backend:
         if any(key != ident and live_device(value) and value['user'] == user and value['name'].casefold() == device['name'].casefold() for key, value in reg['devices'].items()):
             raise ClientError('The destination user already has a device with this name.')
         device['user'] = user
-        self.save(reg)
+        if (self.base/'policy-installed').exists():
+            import vpn_policy
+            try:
+                vpn_policy.apply(self,registry_override=reg,commit=lambda:self.save(reg))
+            except Exception:
+                vpn_policy.apply(self)
+                raise
+        else:
+            self.save(reg)
         self.audit('assign-device', ident)
 
     def secret(self, ident):
@@ -608,8 +616,13 @@ get_export_dir() { export_dir=/var/lib/vpn/; export_to_home_dir=0; }
         self.operation(ident, 'revoke-' + protocol, 'complete')
         if (self.base / 'policy-installed').exists():
             import vpn_policy
-            vpn_policy.apply(self)
-        return 'Credentials revoked. Some established IPsec/L2TP sessions can remain until disconnect; copied profiles cannot be erased remotely.'
+            from vpn_backend import disconnect_profile
+            try:
+                vpn_policy.apply(self)
+            finally:
+                # Session teardown checks kernel identity/generation, never only an IP.
+                disconnect_profile(self,ident,protocol,name)
+        return 'Credentials revoked and verified sessions disconnected. Copied profiles cannot be erased remotely.'
 
     def delete_profile(self, ident, protocol='all'):
         from vpn_backend import disconnect_profile

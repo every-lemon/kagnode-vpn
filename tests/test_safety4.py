@@ -88,6 +88,23 @@ class SafetyTests(unittest.TestCase):
             with self.assertRaisesRegex(RuntimeError,'role cannot'):vpn_tasks.execute(self.manager)
             repair.assert_not_called()
         self.assertEqual(json.loads((self.base/'system-task.json').read_text())['status'],'failed')
+    def test_abandoned_system_task_is_marked_failed_without_replay(self):
+        path=self.base/'system-task.json'
+        m.atomic(path,json.dumps({'status':'running','created':0,'form':{'action':'update'}}))
+        self.manager.command=lambda args,**kw:subprocess.CompletedProcess(args,0,'inactive\n','')
+        self.assertTrue(vpn_tasks.interrupted(self.manager))
+        self.assertTrue(vpn_tasks.interrupted(self.manager,recover=True))
+        self.assertEqual(json.loads(path.read_text())['status'],'failed')
+        self.assertFalse(vpn_tasks.interrupted(self.manager))
+    def test_task_recovery_never_marks_a_live_worker_interrupted(self):
+        path=self.base/'system-task.json'
+        m.atomic(path,json.dumps({'status':'running','created':0}))
+        self.manager.command=lambda args,**kw:subprocess.CompletedProcess(args,0,'active\n','')
+        self.assertFalse(vpn_tasks.interrupted(self.manager,recover=True))
+        self.manager.command=lambda args,**kw:subprocess.CompletedProcess(args,0,'inactive\n','')
+        with vpn_tasks.task_lock(self.manager):
+            self.assertFalse(vpn_tasks.interrupted(self.manager,recover=True))
+        self.assertEqual(json.loads(path.read_text())['status'],'running')
     def test_reboot_budget_recorded_before_request_and_failed_request_not_repeated(self):
         now=[1800000000];coordinator=Coordinator(self.manager,lambda:now[0])
         def fail(args,**kw):

@@ -222,7 +222,7 @@ def apply(backend, skip_unchanged=False, override=None, commit=None, business_sn
                 time.sleep(.05)
         state = backend.m.load()
         if not (backend.base / 'policy-installed').exists():
-            if override:
+            if override or registry_override is not None or business_snapshot is not None or commit is not None:
                 raise RuntimeError('LAN policy firewall is not installed. Repair the firewall before changing access.')
             return
         networks = protected_networks(backend)
