@@ -227,7 +227,7 @@ def render(data, message='', view='overview', device='', query='', owner='', pag
     elif view == 'system':
         body += '<section><h2>Services and memory</h2><p data-services>Loading…</p><p data-memory>Loading…</p><small>Last health refresh <span data-updated>pending</span></small></section>'
         security = data.get('hardening') or {}
-        body += '<section><h2>Appliance hardening</h2><p>SSH: ' + e(security.get('ssh','unknown')) + ' · Package cleanup: ' + e(security.get('status','unknown')) + '</p><details><summary>Hardening details</summary><pre>' + e(json.dumps(security,indent=2)) + '</pre></details></section>'
+        body += '<section><h2>Appliance hardening</h2><p>SSH setup choice: ' + e(security.get('ssh','unknown')) + ' · Automatic package purging: disabled · Hardening: ' + e(security.get('status','not recorded')) + '</p><details><summary>Hardening details</summary><pre>' + e(json.dumps(security,indent=2)) + '</pre></details></section>'
         if data.get('diagnostic'):
             body += '<section><h2>Latest export diagnostic</h2><pre>' + e(json.dumps(data['diagnostic'],indent=2)) + '</pre></section>'
         body += '<p class="muted">Service readings are cached. Expensive diagnostics run only when explicitly requested from the local console.</p>'

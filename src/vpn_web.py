@@ -1093,7 +1093,7 @@ class Application:
             else:
                 status, body = '404 Not Found', page('Not found', '<p>No route is available here.</p>')
         except (OSError, ConnectionError, TimeoutError):
-            status, body = '503 Service Unavailable', page('Service unavailable', '<p>Backend unavailable. Run sudo vpn --web-status for diagnostics.</p>')
+            status, body = '503 Service Unavailable', page('Service unavailable', '<p>Backend unavailable. Run sudo vpn doctor for diagnostics.</p>')
             headers.append(('Retry-After', '3'))
         except Exception as exc:
             status = '403 Forbidden'
@@ -1314,7 +1314,7 @@ def enable(backend, module_source, download_user=None, open_manager=True):
         wait_ready(backend)
     except Exception as exc:
         startup_diagnostics(backend)
-        raise WebError('Web deployment failed: ' + str(exc) + '. Diagnose with sudo vpn --web-status and journalctl -u vpn-control -u vpn-downloads -n 40 --no-pager') from None
+        raise WebError('Web deployment failed: ' + str(exc) + '. Diagnose with sudo vpn doctor and journalctl -u vpn-control -u vpn-downloads -n 40 --no-pager') from None
     return open_management(backend) if open_manager else 'Downloads enabled on 9000; authenticated management online on 9001.'
 
 

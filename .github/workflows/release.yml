@@ -42,4 +42,4 @@ jobs:
         run: |
           flags=()
           if [[ "$GITHUB_REF_NAME" == *-* ]]; then flags+=(--prerelease); fi
-          gh release create "$GITHUB_REF_NAME" dist/*.deb dist/setup.sh dist/update.sh dist/SHA256SUMS dist/manifest.json dist/manifest.sig --verify-tag --notes-file CHANGELOG.md "${flags[@]}"
+          gh release create "$GITHUB_REF_NAME" dist/*.deb dist/setup.sh dist/update.sh dist/SHA256SUMS dist/manifest.json dist/manifest.sig --verify-tag --title "VPN ${GITHUB_REF_NAME#v}" --notes-file CHANGELOG.md "${flags[@]}"

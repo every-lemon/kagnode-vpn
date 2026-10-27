@@ -129,6 +129,9 @@ class Hardening:
         for name, content in unit_files().items():
             self.m.atomic(self.path('/etc/systemd/system') / name, content, 0o644)
         self.m.command(['systemctl', 'daemon-reload'])
+        choice=self.base/'ssh-choice.json'
+        ssh=json.loads(choice.read_text()).get('choice','keep') if choice.exists() else 'keep'
+        self.save({'status':'applied','ssh':ssh,'package_cleanup':'disabled','updated':int(time.time())})
 
     def queue(self):
         raise RuntimeError('Automatic package purging is disabled in VPN 4. SSH is an explicit setup choice.')
