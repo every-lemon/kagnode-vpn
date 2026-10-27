@@ -42,6 +42,22 @@ class BackendTests(unittest.TestCase):
         self.assertEqual(len(self.backend.load()['users']), 2)
         self.assertEqual(self.backend.repo.path.stat().st_mode & 0o777, 0o600)
 
+    def test_reopening_initialized_backends_does_not_write_database(self):
+        web.Store(self.backend.repo.path)
+        with self.backend.repo.connect() as observer:
+            before=observer.execute('PRAGMA data_version').fetchone()[0]
+            for _ in range(3):
+                b.Repository(self.base)
+                web.Store(self.backend.repo.path)
+            self.assertEqual(observer.execute('PRAGMA data_version').fetchone()[0],before)
+
+    def test_future_database_schema_refuses_downgrade(self):
+        with self.backend.repo.connect() as db:db.execute('PRAGMA user_version=999')
+        with self.assertRaisesRegex(RuntimeError,'newer than'):
+            b.Repository(self.base)
+        with self.backend.repo.connect() as db:
+            self.assertEqual(db.execute('PRAGMA user_version').fetchone()[0],999)
+
     def test_snapshot_failure_does_not_undo_authoritative_database_commit(self):
         original = m.atomic
         def atomic(path, data, mode=0o600):

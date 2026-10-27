@@ -43,7 +43,7 @@ def permitted(role, action):
 class Authentication:
     def init_auth(self):
         with self.connect() as db:
-            db.executescript('''
+            db.executescript('''BEGIN IMMEDIATE;
 CREATE TABLE IF NOT EXISTS administrators(id TEXT PRIMARY KEY,username TEXT NOT NULL UNIQUE COLLATE NOCASE,password TEXT NOT NULL,role TEXT NOT NULL CHECK(role IN ('owner','operator','auditor')),enabled INTEGER NOT NULL DEFAULT 1,totp TEXT NOT NULL,enrolled INTEGER NOT NULL DEFAULT 0,last_counter INTEGER NOT NULL DEFAULT -1,revision INTEGER NOT NULL DEFAULT 1);
 CREATE TABLE IF NOT EXISTS admin_recovery(admin TEXT NOT NULL REFERENCES administrators(id),hash TEXT NOT NULL UNIQUE,PRIMARY KEY(admin,hash));
 CREATE TABLE IF NOT EXISTS admin_sessions(hash TEXT PRIMARY KEY,admin TEXT NOT NULL REFERENCES administrators(id),csrf TEXT NOT NULL,created REAL NOT NULL,seen REAL NOT NULL,boot TEXT NOT NULL,revision INTEGER NOT NULL);

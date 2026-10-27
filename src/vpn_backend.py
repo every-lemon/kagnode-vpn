@@ -17,7 +17,12 @@ class Repository:
         self.path = self.base / 'backend.db'
         self.base.mkdir(parents=True, exist_ok=True, mode=0o700)
         with self.connect() as db:
-            db.executescript('''
+            version=db.execute('PRAGMA user_version').fetchone()[0]
+            if version>2:raise RuntimeError('Database schema is newer than this application; refusing a downgrade.')
+            if version==2:
+                if self.path.stat().st_mode&0o777!=0o600:self.path.chmod(0o600)
+                return
+            db.executescript('''BEGIN IMMEDIATE;
 CREATE TABLE IF NOT EXISTS metadata(key TEXT PRIMARY KEY,value TEXT NOT NULL);
 CREATE TABLE IF NOT EXISTS users(id TEXT PRIMARY KEY,data TEXT NOT NULL);
 CREATE TABLE IF NOT EXISTS devices(id TEXT PRIMARY KEY,user_id TEXT NOT NULL REFERENCES users(id),data TEXT NOT NULL);
@@ -28,17 +33,17 @@ CREATE TABLE IF NOT EXISTS batches(id TEXT PRIMARY KEY,data TEXT NOT NULL,update
 CREATE TABLE IF NOT EXISTS audit(id INTEGER PRIMARY KEY,time REAL NOT NULL,action TEXT NOT NULL,target TEXT NOT NULL,outcome TEXT NOT NULL);
 CREATE TABLE IF NOT EXISTS deliveries(device TEXT PRIMARY KEY,generation TEXT NOT NULL,data TEXT NOT NULL);
 CREATE TABLE IF NOT EXISTS policy_sessions(key TEXT PRIMARY KEY,data TEXT NOT NULL,updated REAL NOT NULL);
-PRAGMA user_version=1;
 ''')
             db.execute("INSERT OR IGNORE INTO metadata VALUES ('revision','0')")
             if 'hidden' not in {row[1] for row in db.execute('PRAGMA table_info(jobs)')}:
                 db.execute('ALTER TABLE jobs ADD COLUMN hidden INTEGER NOT NULL DEFAULT 0')
-            db.executescript('''
-CREATE INDEX IF NOT EXISTS device_owner ON devices(user_id);
-CREATE INDEX IF NOT EXISTS job_state_time ON jobs(status,updated);
-CREATE INDEX IF NOT EXISTS user_name_order ON users(casefold(json_extract(data,'$.name')),id);
-CREATE INDEX IF NOT EXISTS device_name_order ON devices(casefold(json_extract(data,'$.name')),id);
-''')
+            for statement in (
+                'CREATE INDEX IF NOT EXISTS device_owner ON devices(user_id)',
+                'CREATE INDEX IF NOT EXISTS job_state_time ON jobs(status,updated)',
+                "CREATE INDEX IF NOT EXISTS user_name_order ON users(casefold(json_extract(data,'$.name')),id)",
+                "CREATE INDEX IF NOT EXISTS device_name_order ON devices(casefold(json_extract(data,'$.name')),id)",
+            ):db.execute(statement)
+            db.execute('PRAGMA user_version=2')
         self.path.chmod(0o600)
 
     @contextlib.contextmanager

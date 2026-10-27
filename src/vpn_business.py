@@ -32,7 +32,7 @@ class Business:
         with repo.connect() as db:
             if db.execute("SELECT 1 FROM sqlite_master WHERE name='access_groups'").fetchone():
                 return
-            db.executescript('''
+            db.executescript('''BEGIN IMMEDIATE;
 CREATE TABLE IF NOT EXISTS access_groups(id TEXT PRIMARY KEY,name TEXT UNIQUE NOT NULL,policy TEXT NOT NULL);
 CREATE TABLE IF NOT EXISTS group_members(device TEXT PRIMARY KEY REFERENCES devices(id) ON DELETE CASCADE,group_id TEXT NOT NULL REFERENCES access_groups(id));
 CREATE TABLE IF NOT EXISTS resources(id TEXT PRIMARY KEY,name TEXT UNIQUE NOT NULL,cidr TEXT NOT NULL,protocol TEXT NOT NULL,ports TEXT NOT NULL);

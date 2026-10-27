@@ -54,7 +54,12 @@ class Store(Authentication):
         self.boot = boot or Path('/proc/sys/kernel/random/boot_id').read_text().strip()
         self.path.parent.mkdir(parents=True, exist_ok=True, mode=0o700)
         with self.connect() as db:
-            db.executescript('''CREATE TABLE IF NOT EXISTS settings(k TEXT PRIMARY KEY,v TEXT NOT NULL);
+            ready=db.execute("SELECT 1 FROM sqlite_master WHERE name='settings'").fetchone()
+            if ready and db.execute("SELECT 1 FROM settings WHERE k='web-schema' AND v='1'").fetchone():
+                if self.path.stat().st_mode&0o777!=0o600:self.path.chmod(0o600)
+                return
+            db.executescript('''BEGIN IMMEDIATE;
+CREATE TABLE IF NOT EXISTS settings(k TEXT PRIMARY KEY,v TEXT NOT NULL);
 CREATE TABLE IF NOT EXISTS tokens(hash TEXT PRIMARY KEY,device TEXT,filename TEXT,generation TEXT,expires REAL,used REAL);
 CREATE TABLE IF NOT EXISTS delivery_revocations(hash TEXT PRIMARY KEY REFERENCES tokens(hash) ON DELETE CASCADE);
 CREATE TABLE IF NOT EXISTS token_manifests(hash TEXT PRIMARY KEY REFERENCES tokens(hash) ON DELETE CASCADE,data TEXT NOT NULL);
@@ -65,6 +70,7 @@ CREATE TABLE IF NOT EXISTS flashes(session TEXT PRIMARY KEY,message TEXT NOT NUL
             db.execute('INSERT OR IGNORE INTO settings VALUES (?,?)', ('secret', secrets.token_hex(32)))
         self.path.chmod(0o600)
         self.init_auth()
+        with self.connect() as db:db.execute("INSERT OR REPLACE INTO settings VALUES ('web-schema','1')")
 
     @contextlib.contextmanager
     def connect(self):
