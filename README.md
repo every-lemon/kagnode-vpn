@@ -2,7 +2,7 @@
 
 Ubuntu-native administration for WireGuard, IKEv2, L2TP/IPsec, AdGuard Home and VPN profile delivery.
 
-**4.0.0-beta.1 is an evaluation prerelease. RC and stable promotion require further real-device qualification.**
+**4.0.0-beta.2 is an evaluation prerelease. RC and stable promotion require further real-device qualification.**
 See [qualification status](docs/QUALIFICATION.md) for what has actually been tested.
 
 Target: Ubuntu Server 24.04 LTS amd64, physical server or VM; systemd required.
@@ -12,7 +12,7 @@ Target: Ubuntu Server 24.04 LTS amd64, physical server or VM; systemd required.
 Install a signed release package, then configure it explicitly:
 
 ```sh
-sudo apt install ./vpn_4.0.0~beta.1_amd64.deb
+sudo apt install ./vpn_4.0.0-beta.2_amd64.deb
 sudo vpn setup --install
 ```
 

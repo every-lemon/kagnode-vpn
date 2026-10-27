@@ -36,7 +36,11 @@ for path in root.rglob('*'):
  elif path.name in ('vpn','postinst','prerm','setup.sh'):path.chmod(0o755)
  else:path.chmod(0o644)
 dist=ROOT/'dist';dist.mkdir(exist_ok=True)
-package=dist/f'vpn_{debian(version)}_amd64.deb'
+# GitHub normalizes '~' in asset names. Keep Debian ordering inside control,
+# and use the canonical SemVer in the portable download filename.
+package=dist/f'vpn_{version}_amd64.deb'
+if any(p.name!=package.name for p in dist.glob('*.deb')):
+ raise RuntimeError('dist contains another release; archive it before building this version.')
 subprocess.run(['dpkg-deb','--threads-max=1','-Zxz','-z6','--root-owner-group','--build',str(root),str(package)],check=True)
 for name in ('setup.sh','update.sh'):shutil.copy2(ROOT/name,dist/name)
 manifest={'schema':1,'version':version,'platform':'ubuntu-24.04-amd64','assets':{p.name:{'sha256':hashlib.sha256(p.read_bytes()).hexdigest(),'size':p.stat().st_size} for p in (package,dist/'setup.sh',dist/'update.sh')}}

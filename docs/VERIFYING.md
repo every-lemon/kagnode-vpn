@@ -26,11 +26,11 @@ the signed manifest. Set `asset` below to the exact package or script you will r
 python3 - <<'PY'
 import hashlib, json
 from pathlib import Path
-asset = 'setup.sh'  # Or update.sh / vpn_4.0.0~beta.1_amd64.deb
+asset = 'setup.sh'  # Or update.sh / vpn_4.0.0-beta.2_amd64.deb
 manifest = json.loads(Path('manifest.json').read_text())
 assert manifest['schema'] == 1
 assert manifest['platform'] == 'ubuntu-24.04-amd64'
-assert manifest['version'] == '4.0.0-beta.1'
+assert manifest['version'] == '4.0.0-beta.2'
 expected = manifest['assets'][asset]
 data = Path(asset).read_bytes()
 assert len(data) == expected['size'], 'Size mismatch'

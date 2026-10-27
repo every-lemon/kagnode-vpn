@@ -1,7 +1,10 @@
-# 4.0.0-beta.1 qualification
+# VPN 4.0 beta qualification
 
 This file records beta evidence. RC/stable promotion still requires the real-device
 and external-network checks described below.
+
+Beta.2 changes release packaging and publication verification. Its VPN backend is
+the beta.1 backend qualified below; five additional tests cover downloaded artifacts.
 
 Evidence recorded on the builder (27 October 2026):
 

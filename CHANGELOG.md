@@ -1,5 +1,13 @@
 # Changelog
 
+## 4.0.0-beta.2 — 2026-10-27
+
+- Fix the Debian download filename so GitHub preserves the name in the signed manifest.
+  Package metadata still uses Debian's `~beta.2` ordering; the download uses `-beta.2`.
+- Verify filenames, signatures and every downloaded asset from a draft before publication.
+- Keep beta.1 immutable. Its package filename was normalized by GitHub on upload;
+  use beta.2 for the corrected package/checksum workflow. The VPN backend is unchanged.
+
 ## 4.0.0-beta.1 — 2026-10-27
 
 First evaluation prerelease for Ubuntu Server 24.04 LTS amd64.
