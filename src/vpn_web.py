@@ -459,6 +459,8 @@ class Controller:
             if view=='device' and request.get('device') in registry['devices']:
                 extra['effective']=business.effective(registry,request['device'],values)
                 extra['admin_approved']=request['device'] in self.state.get('admin_devices',[])
+                extra['device_policy']=values['policies'].get(('device',request['device']),{})
+            if view=='users':extra['user_policies']={ident:values['policies'].get(('user',ident),{}) for ident in registry['users']}
             if view=='system':
                 from vpn_maintenance import Coordinator
                 extra['maintenance']=Coordinator(self.backend.m).status()
@@ -547,20 +549,29 @@ class Controller:
                 return {'message': 'Enrollment token (give privately to this administrator): ' + result['enrollment'], 'sensitive': True}
             self.store.admin_change(actor, form.get('id',''), role=form.get('role') if action == 'admin-role' else None, enabled=form.get('enabled') == 'yes' if action == 'admin-disable' else None)
             return {'message': 'Administrator updated; existing sessions invalidated.'}
-        if action=='device-rule':
+        def changed_rules(policy):
+            rule={'effect':form.get('effect'),'resource':form.get('resource')}
+            rules=list(policy.get('rules',[]))
+            if action.endswith('-remove'):
+                if rule not in rules:raise WebError('That rule changed. Refresh before removing it.')
+                rules=[r for r in rules if r!=rule]
+            elif rule not in rules:rules.append(rule)
+            return dict(policy,rules=rules)
+        if action in ('device-rule','device-rule-remove','user-rule','user-rule-remove'):
             from vpn_business import Business
-            policies=Business(self.backend.repo).snapshot()['policies']
-            policy=dict(policies.get(('device',form.get('device')),{}))
-            policy['rules']=policy.get('rules',[])+[{'effect':form.get('effect'),'resource':form.get('resource')}]
-            form=dict(form,action='access-policy',kind='device',id=form.get('device'),policy=json.dumps(policy));action='access-policy'
-        if action=='group-rule':
+            kind='device' if action.startswith('device') else 'user'
+            ident=form.get('device') if kind=='device' else form.get('id')
+            policy=Business(self.backend.repo).snapshot()['policies'].get((kind,ident),{})
+            form=dict(form,action='access-policy',kind=kind,id=ident,policy=json.dumps(changed_rules(policy)));action='access-policy'
+        if action in ('group-rule','group-rule-remove','group-settings'):
             from vpn_business import Business
-            groups=Business(self.backend.repo).snapshot()['groups']
-            group=groups.get(form.get('id',''))
-            if not group: raise WebError('Group not found.')
-            policy=dict(group['policy']); policy['rules']=policy.get('rules',[])+[{'effect':form.get('effect'),'resource':form.get('resource')}]
-            form=dict(form,action='group-save',name=group['name'],policy=json.dumps(policy))
-            action='group-save'
+            group=Business(self.backend.repo).snapshot()['groups'].get(form.get('id',''))
+            if not group:raise WebError('Group not found.')
+            if action=='group-settings':
+                if any(form.get(k) not in ('yes','no') for k in ('internet','isolation')):raise WebError('Choose internet access and client isolation settings.')
+                policy=dict(group['policy'],internet=form['internet']=='yes',isolation=form['isolation']=='yes')
+            else:policy=changed_rules(group['policy'])
+            form=dict(form,action='group-save',name=form.get('name',group['name']),policy=json.dumps(policy));action='group-save'
         if action=='group-add' and 'policy' not in form:
             form=dict(form,policy=json.dumps({'internet':form.get('internet')=='yes','isolation':form.get('isolation')!='no','rules':[]}))
         if action in ('group-add','group-save','group-delete','device-group','resource-save','resource-delete','access-policy'):
@@ -1016,7 +1027,7 @@ class Application:
                     token=form_data.get('token','')
                     if form_data.get('code'):
                         result=self.rpc(dict(context('enroll-confirm'),token=token,code=form_data['code']))
-                        body=page('MFA enrolled','<h1>Save your recovery codes privately</h1><pre>'+html.escape('\n'.join(result['codes']))+'</pre><a href="/manage">Sign in</a>')
+                        body=page('MFA enrolled','<h1>Save your recovery codes privately</h1><pre>'+html.escape('\n'.join(result['codes']))+'</pre><p>Use the next authenticator code when signing in; the enrollment code has already been used.</p><a href="/manage">Sign in</a>')
                     else:
                         result=self.rpc(dict(context('enroll-info'),token=token))
                         body=page('Enroll authenticator','<h1>'+html.escape(result['username'])+'</h1><p>Add this key in your authenticator app (issuer VPN):</p><code>'+html.escape(result['secret'])+'</code><form method="post" action="/manage/enroll"><input type="hidden" name="token" value="'+html.escape(token,quote=True)+'"><label>Authenticator code<input name="code" autocomplete="one-time-code" required></label><button>Finish enrollment</button></form>')

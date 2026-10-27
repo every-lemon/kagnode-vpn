@@ -19,6 +19,7 @@ def enroll_owner(manager):
     print('Add this secret to your authenticator app (issuer VPN): '+result['secret'])
     codes=store.enroll(result['enrollment'],input('Current authenticator code: ').strip())
     print('Single-use recovery codes. Store privately; they are not shown again:\n'+'\n'.join(codes))
+    print('Use the next authenticator code when signing in; the enrollment code has already been used.')
     input('Press Enter after saving your recovery codes: ')
 
 

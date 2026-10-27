@@ -13,6 +13,20 @@ def identity_fields(record):
     expiry=datetime.datetime.fromtimestamp(record['expires'],datetime.timezone.utc).strftime('%Y-%m-%dT%H:%M') if record.get('expires') else ''
     return select('disabled',[('no','Enabled'),('yes','Disabled')],'yes' if record.get('disabled') else 'no')+'<label>Expires (UTC, blank for no expiry)<input type="datetime-local" name="expires" value="'+e(expiry)+'"></label>'
 
+def rule_controls(kind,ident,policy,resources,csrf,form,returns):
+    fields={('device' if kind=='device' else 'id'):ident,**returns}
+    body='<p>Removing a deny rule can grant access. Review effective access after changes.</p><ul>'
+    for rule in policy.get('rules',[]):
+        body+='<li>'+e(rule['effect'])+' '+e(resources.get(rule['resource'],{}).get('name','Unavailable'))+form(kind+'-rule-remove',csrf,{**fields,**rule},label='Remove this rule')+'</li>'
+    body+='</ul>'
+    if resources:body+=form(kind+'-rule',csrf,fields,select('effect',[('deny','Deny'),('allow','Allow')])+select('resource',[(i,r['name']) for i,r in resources.items()]),'Add rule')
+    else:body+='<p>Create a named resource under Groups &amp; resources before adding rules.</p>'
+    return body
+
+def resource_fields(resource=None):
+    r=resource or {}
+    return '<label>Name<input name="name" maxlength="80" required value="'+e(r.get('name',''))+'"></label><label>IPv4 network<input name="cidr" required placeholder="192.168.10.0/24" value="'+e(r.get('cidr',''))+'"></label>'+select('protocol',[('tcp','TCP'),('udp','UDP'),('any','Any protocol')],r.get('protocol','tcp'))+'<label>Ports (blank for all)<input name="ports" placeholder="443,8443" value="'+e(','.join(map(str,r.get('ports',[]))))+'"></label>'
+
 def render(data, message='', view='overview', **options):
     from vpn_admin import render as original, form, link, STYLE, SCRIPT
     from vpn_web import page
@@ -31,7 +45,7 @@ def render(data, message='', view='overview', **options):
         if view=='users':
             controls='<section><h2>User access and expiry</h2>'
             for ident,record in data.get('registry',{}).get('users',{}).items():
-                controls+='<details><summary>'+e(record['name'])+'</summary>'+form('identity-state',data['csrf'],{'kind':'user','id':ident,'return_view':'users'},identity_fields(record),'Apply user state')+'</details>'
+                controls+='<details><summary>'+e(record['name'])+'</summary>'+form('identity-state',data['csrf'],{'kind':'user','id':ident,'return_view':'users'},identity_fields(record),'Apply user state')+rule_controls('user',ident,data.get('user_policies',{}).get(ident,{}),data.get('business',{}).get('resources',{}),data['csrf'],form,{'return_view':'users'})+'</details>'
             document=document.replace(b'<footer>',(controls+'</section>').encode()+b'<footer>',1)
         if view=='device' and options.get('tab','profiles')=='access':
             document=document.replace(b'<footer>',device_access(data,options.get('device',''),form).encode()+b'<footer>',1)
@@ -53,15 +67,16 @@ def render(data, message='', view='overview', **options):
         business=data.get('business',{}); groups=business.get('groups',{}); resources=business.get('resources',{})
         body+='<p>These controls apply to IPv4 traffic through the VPN. Explicit denies override grants. Ungrouped clients have internet and server DNS, with LAN access and client-to-client traffic blocked.</p>'
         for ident,g in groups.items():
-            body+='<article><h2>'+e(g['name'])+'</h2><p>Internet: '+e(g['policy'].get('internet',False))+' · Client isolation: '+e(g['policy'].get('isolation',True))+'</p><ul>'
-            for r in g['policy'].get('rules',[]): body+='<li>'+e(r['effect'])+' '+e(resources.get(r['resource'],{}).get('name','Unavailable'))+'</li>'
-            body+='</ul>'
+            body+='<article><h2>'+e(g['name'])+'</h2><p>Internet: '+e(g['policy'].get('internet',False))+' · Client isolation: '+e(g['policy'].get('isolation',True))+'</p>'
             if ident!='ungrouped':
-                body+=form('group-rule',csrf,{'id':ident,'return_view':view},select('effect',[('deny','Deny'),('allow','Allow')])+select('resource',[(i,r['name']) for i,r in resources.items()]),'Add rule')
+                body+=form('group-settings',csrf,{'id':ident,'return_view':view},'<label>Name<input name="name" value="'+e(g['name'])+'" maxlength="80" required></label>'+select('internet',[('yes','Internet allowed'),('no','Internet blocked')],'yes' if g['policy'].get('internet') else 'no')+select('isolation',[('yes','Isolate clients'),('no','Allow granted client resources')],'yes' if g['policy'].get('isolation',True) else 'no'),'Save group settings')
+                body+=rule_controls('group',ident,g['policy'],resources,csrf,form,{'return_view':view})
                 body+=form('group-delete',csrf,{'id':ident,'return_view':view},label='Delete empty group')
             body+='</article>'
         body+='<section><h2>New group</h2>'+form('group-add',csrf,{'return_view':view},'<label>Name<input name="name" maxlength="80" required></label>'+select('internet',[('yes','Internet allowed'),('no','Internet blocked')])+select('isolation',[('yes','Isolate clients'),('no','Allow granted client resources')]),'Create group')+'</section>'
-        body+='<section><h2>Resources</h2><ul>'+''.join('<li>'+e(r['name'])+' — '+e(r['cidr'])+' '+e(r['protocol'])+' '+e(','.join(map(str,r['ports'])))+'</li>' for r in resources.values())+'</ul>'+form('resource-save',csrf,{'return_view':view},'<label>Name<input name="name" required maxlength="80"></label><label>IPv4 network<input name="cidr" placeholder="192.168.10.0/24" required></label>'+select('protocol',[('tcp','TCP'),('udp','UDP'),('any','Any protocol')])+'<label>Ports (blank for all)<input name="ports" placeholder="443,8443"></label>','Save resource')+'</section>'
+        body+='<section><h2>Resources</h2>'
+        for ident,r in resources.items():body+='<details><summary>'+e(r['name'])+' — '+e(r['cidr'])+'</summary>'+form('resource-save',csrf,{'id':ident,'return_view':view},resource_fields(r),'Save resource')+form('resource-delete',csrf,{'id':ident,'return_view':view},label='Delete unreferenced resource')+'</details>'
+        body+='<h3>New resource</h3>'+form('resource-save',csrf,{'return_view':view},resource_fields(),'Create resource')+'</section>'
     body+='</div>'
     navigation=[('overview','Dashboard'),('devices','Devices'),('users','Users'),('groups','Groups & resources'),('delivery','Delivery'),('jobs','Tasks'),('system','System'),('audit','Audit')]
     if actor.get('role')=='owner':navigation.append(('administrators','Administrators'))
@@ -103,7 +118,7 @@ def device_access(data,device,form):
     body+=form('identity-state',data['csrf'],{'kind':'device','id':device,'return_device':device,'return_tab':'access'},identity_fields(data.get('registry',{}).get('devices',{}).get(device,{})),'Apply identity state')
     resources=business.get('resources',{})
     body+=form('policy-preview',data['csrf'],{'device':device,'return_device':device,'return_tab':'access'},'<label>Destination IPv4<input name="address" required></label>'+select('protocol',[('tcp','TCP'),('udp','UDP')])+'<label>Port<input type="number" min="1" max="65535" name="port" required></label>','Explain effective access')
-    body+=form('device-rule',data['csrf'],{'device':device,'return_device':device,'return_tab':'access'},select('effect',[('deny','Deny'),('allow','Allow')])+select('resource',[(i,r['name']) for i,r in resources.items()]),'Add device rule')
+    body+=rule_controls('device',device,data.get('device_policy',{}),resources,data['csrf'],form,{'return_device':device,'return_tab':'access'})
     if data.get('identity',{}).get('role')=='owner':
         body+=form('admin-device',data['csrf'],{'device':device,'return_device':device,'return_tab':'access'},select('approved',[('no','Not approved for administration'),('yes','Approve dashboard access through this VPN device')],'yes' if data.get('admin_approved') else 'no'),'Set administrator device approval')
     return body+'</section>'

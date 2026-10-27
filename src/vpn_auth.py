@@ -11,7 +11,7 @@ from urllib.parse import quote
 HASH_SLOTS = threading.BoundedSemaphore(2)
 ROLES = ('owner', 'operator', 'auditor')
 OWNER_ACTIONS = frozenset(('admin-add', 'admin-disable', 'admin-role', 'admin-device', 'access-save', 'maintenance-save', 'reboot', 'update', 'system-repair'))
-OPERATOR_ACTIONS = frozenset(('user-add', 'device-add', 'rename', 'assign', 'protocol-add', 'protocols-add', 'policy', 'bundle', 'delivery-password', 'delivery-link', 'prepare-export', 'export', 'reveal', 'link', 'revoke', 'replace', 'user-revoke', 'rotate-l2tp', 'repair', 'copy', 'clear-history', 'delete-profile', 'batch-preview', 'batch-confirm', 'batch-run', 'batch-cancel', 'batch-retry', 'job-retry', 'group-add', 'group-save', 'group-delete', 'device-group', 'resource-save', 'resource-delete', 'access-policy', 'group-rule', 'device-rule', 'identity-state', 'policy-preview', 'delivery-revoke', 'delivery-reissue'))
+OPERATOR_ACTIONS = frozenset(('user-add', 'device-add', 'rename', 'assign', 'protocol-add', 'protocols-add', 'policy', 'bundle', 'delivery-password', 'delivery-link', 'prepare-export', 'export', 'reveal', 'link', 'revoke', 'replace', 'user-revoke', 'rotate-l2tp', 'repair', 'copy', 'clear-history', 'delete-profile', 'batch-preview', 'batch-confirm', 'batch-run', 'batch-cancel', 'batch-retry', 'job-retry', 'group-add', 'group-save', 'group-delete', 'device-group', 'resource-save', 'resource-delete', 'access-policy', 'group-rule', 'group-rule-remove', 'group-settings', 'device-rule', 'device-rule-remove', 'user-rule', 'user-rule-remove', 'identity-state', 'policy-preview', 'delivery-revoke', 'delivery-reissue'))
 
 class AuthError(RuntimeError):
     pass

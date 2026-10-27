@@ -64,3 +64,27 @@ class IdentityChanges(unittest.TestCase):
         rendered=maintenance({'csrf':'fixture','identity':{'role':'owner'},'maintenance':{'mode':'window'},'access':{'admin_mode':'https'}},form)
         self.assertIn('value="window" selected',rendered)
         self.assertIn('value="https" selected',rendered)
+
+    def test_group_edits_preserve_denies_and_rule_removal_is_explicit(self):
+        from vpn_business import Business
+        business=Business(self.backend.repo)
+        resource=business.change(dict(action='resource-save',name='Office',cidr='192.168.20.0/24',protocol='tcp',ports='443'))
+        group=business.change(dict(action='group-add',name='Staff',policy='{"internet":true,"isolation":true,"rules":[]}'))
+        def action(name,**values):
+            with patch.object(vpn_policy,'apply'):
+                return self.controller.action(dict(actor=self.actor,action=name,**values))
+        action('group-rule',id=group,effect='deny',resource=resource)
+        action('group-settings',id=group,name='Staff renamed',internet='no',isolation='yes')
+        saved=business.snapshot()['groups'][group]
+        self.assertEqual(saved['name'],'Staff renamed')
+        self.assertFalse(saved['policy']['internet'])
+        self.assertEqual(saved['policy']['rules'],[{'effect':'deny','resource':resource}])
+        action('user-rule',id=self.user,effect='allow',resource=resource)
+        self.assertEqual(business.snapshot()['policies'][('user',self.user)]['rules'],[{'effect':'allow','resource':resource}])
+        action('user-rule-remove',id=self.user,effect='allow',resource=resource)
+        action('group-rule-remove',id=group,effect='deny',resource=resource)
+        self.assertEqual(business.snapshot()['groups'][group]['policy']['rules'],[])
+        with self.assertRaisesRegex(RuntimeError,'changed'):
+            action('group-rule-remove',id=group,effect='deny',resource=resource)
+        with self.assertRaisesRegex(ValueError,'built-in'):
+            action('group-settings',id='ungrouped',name='Changed',internet='no',isolation='no')
