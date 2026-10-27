@@ -1,0 +1,33 @@
+name: Checks
+on:
+  push:
+  pull_request:
+permissions:
+  contents: read
+jobs:
+  tests:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install test utilities
+        run: sudo apt-get update && sudo apt-get install -y shellcheck libnss3-tools qrencode python3-venv
+      - name: Python test environment
+        run: |
+          python3 -m venv .venv
+          .venv/bin/pip install waitress==3.0.2 pyzipper==0.4.0 pycryptodomex==3.23.0 quickjs==1.19.4
+      - name: Rebuild and inspect
+        run: |
+          python3 build.py
+          git diff --exit-code -- setup.sh update.sh
+          python3 -m compileall -q src
+          bash -n setup.sh update.sh
+          shellcheck -x setup.sh update.sh
+          bash update.sh --verify
+          python3 tools/check_secrets.py
+      - name: Tests
+        run: .venv/bin/python -m unittest discover -s tests -v
+      - name: Package inspection
+        run: |
+          python3 tools/package.py
+          dpkg-deb --info dist/*.deb
+          dpkg-deb --contents dist/*.deb

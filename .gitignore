@@ -1,0 +1,14 @@
+private/
+__pycache__/
+*.py[cod]
+.venv/
+build/
+dist/
+*.db
+*.db-*
+*.key
+*.p12
+*.mobileconfig
+*.sswan
+*.mhtml
+.env

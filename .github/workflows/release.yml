@@ -1,0 +1,45 @@
+name: Signed release
+on:
+  push:
+    tags: ['v*']
+permissions:
+  contents: read
+jobs:
+  release:
+    runs-on: ubuntu-24.04
+    environment: release
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - name: Match immutable version
+        run: test "$GITHUB_REF_NAME" = "v$(cat VERSION)"
+      - name: Utilities and tests
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y shellcheck libnss3-tools qrencode python3-venv
+          python3 -m venv .venv
+          .venv/bin/pip install waitress==3.0.2 pyzipper==0.4.0 pycryptodomex==3.23.0 quickjs==1.19.4
+          python3 build.py
+          git diff --exit-code -- setup.sh update.sh
+          shellcheck -x setup.sh update.sh
+          .venv/bin/python -m unittest discover -s tests -v
+          python3 tools/check_secrets.py
+      - name: Build and sign
+        env:
+          SIGNING_KEY: ${{ secrets.VPN_RELEASE_KEY }}
+        run: |
+          umask 077
+          test -n "$SIGNING_KEY"
+          key=$(mktemp)
+          trap 'rm -f "$key"' EXIT
+          printf '%s\n' "$SIGNING_KEY" > "$key"
+          VPN_RELEASE_KEY="$key" python3 tools/package.py
+          openssl pkeyutl -verify -pubin -inkey release-key.pem -rawin -in dist/manifest.json -sigfile dist/manifest.sig
+      - name: Publish
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          flags=()
+          if [[ "$GITHUB_REF_NAME" == *-* ]]; then flags+=(--prerelease); fi
+          gh release create "$GITHUB_REF_NAME" dist/*.deb dist/setup.sh dist/update.sh dist/SHA256SUMS dist/manifest.json dist/manifest.sig --verify-tag --notes-file CHANGELOG.md "${flags[@]}"
