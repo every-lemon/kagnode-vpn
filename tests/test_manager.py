@@ -16,6 +16,16 @@ spec.loader.exec_module(m)
 
 
 class RuntimeTests(unittest.TestCase):
+    def test_credential_writes_remain_durable_when_health_telemetry_skips_disk_sync(self):
+        with patch.object(m.os,'fsync') as sync:
+            m.atomic(self.base/'credential','private')
+            self.assertEqual(sync.call_count,2)
+            sync.reset_mock()
+            m.atomic(self.base/'health','sample',durable=False)
+            sync.assert_not_called()
+        self.assertEqual((self.base/'health').read_text(),'sample')
+        self.assertEqual((self.base/'credential').stat().st_mode&0o777,0o600)
+
     def setUp(self):
         self.temp = tempfile.TemporaryDirectory()
         self.root = Path(self.temp.name)

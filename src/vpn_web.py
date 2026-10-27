@@ -823,7 +823,7 @@ def maintenance_loop(backend, stop, boot):
             vpn_policy.apply(backend, skip_unchanged=True)
             Controller(backend).disconnect_expired()
             backend.repo.cleanup()
-            backend.m.atomic(backend.base / 'backend-health.json', json.dumps({'boot': boot, 'monotonic': time.monotonic()}))
+            backend.m.atomic(backend.base / 'backend-health.json', json.dumps({'boot': boot, 'monotonic': time.monotonic()}),durable=False)
         except Exception:
             backend.repo.audit('maintenance', 'policy', 'failed; inspect diagnostics')
         stop.wait(30)
@@ -1207,7 +1207,7 @@ ProtectSystem=strict
 RestrictAddressFamilies=AF_INET AF_INET6 AF_UNIX
 Restart=on-failure
 RestartSec=2
-TimeoutStartSec=35
+TimeoutStartSec=90
 TimeoutStopSec=5
 '''
     common += common_sandbox()

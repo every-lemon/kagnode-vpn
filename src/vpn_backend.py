@@ -364,7 +364,8 @@ CREATE TABLE IF NOT EXISTS policy_sessions(key TEXT PRIMARY KEY,data TEXT NOT NU
 
     def job_progress(self, backend, running, stage):
         boot = Path('/proc/sys/kernel/random/boot_id').read_text().strip()
-        backend.m.atomic(self.base / 'backend-job-health.json', json.dumps({'boot': boot, 'monotonic': time.monotonic(), 'running': running, 'stage': stage, 'job': getattr(backend, '_job_id', '')}))
+        # Boot-bound telemetry is disposable; authoritative jobs remain durable in SQLite.
+        backend.m.atomic(self.base / 'backend-job-health.json', json.dumps({'boot': boot, 'monotonic': time.monotonic(), 'running': running, 'stage': stage, 'job': getattr(backend, '_job_id', '')}),durable=False)
 
     def run_one(self, backend, execute):
         # Acquire native-operation lock before claiming work. Competing CLI/update leaves it queued.

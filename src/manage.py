@@ -59,7 +59,7 @@ def command(args, *, data=None, check=True, env=None, timeout=180):
     return result
 
 
-def atomic(path, data, mode=0o600):
+def atomic(path, data, mode=0o600, *, durable=True):
     path = Path(path)
     path.parent.mkdir(parents=True, exist_ok=True, mode=0o700)
     fd, tmp = tempfile.mkstemp(dir=path.parent, prefix='.' + path.name)
@@ -68,13 +68,14 @@ def atomic(path, data, mode=0o600):
         with os.fdopen(fd, 'wb') as stream:
             stream.write(data.encode() if isinstance(data, str) else data)
             stream.flush()
-            os.fsync(stream.fileno())
+            if durable:os.fsync(stream.fileno())
         os.replace(tmp, path)
-        directory = os.open(path.parent, os.O_RDONLY | os.O_DIRECTORY)
-        try:
-            os.fsync(directory)
-        finally:
-            os.close(directory)
+        if durable:
+            directory = os.open(path.parent, os.O_RDONLY | os.O_DIRECTORY)
+            try:
+                os.fsync(directory)
+            finally:
+                os.close(directory)
     finally:
         if os.path.exists(tmp):
             os.unlink(tmp)
