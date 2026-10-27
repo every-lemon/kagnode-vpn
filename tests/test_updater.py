@@ -3,6 +3,8 @@ import contextlib
 import fcntl
 import io
 import json
+import subprocess
+import sys
 from pathlib import Path
 import tempfile
 import types
@@ -96,6 +98,19 @@ class UpdaterTests(unittest.TestCase):
         update.command=modify
         with self.assertRaisesRegex(u.UpdateError,'source changed'):self.execute(update)
         self.assertEqual(self.source.read_text(),'changed');self.assert_private_unchanged()
+    def test_native_package_lock_blocks_code_update_before_service_changes(self):
+        lock=self.root/'var/lib/dpkg/lock-frontend';lock.parent.mkdir(parents=True);lock.touch()
+        child=subprocess.Popen([sys.executable,'-c',
+            'import fcntl,sys; f=open(sys.argv[1],"r+"); fcntl.lockf(f,fcntl.LOCK_EX); print("locked",flush=True); sys.stdin.read()',str(lock)],
+            stdin=subprocess.PIPE,stdout=subprocess.PIPE,text=True)
+        try:
+            self.assertEqual(child.stdout.readline().strip(),'locked')
+            update=self.updater()
+            with self.assertRaisesRegex(u.UpdateError,'Ubuntu package maintenance'):self.execute(update)
+            self.assertFalse(update.calls);self.assert_private_unchanged()
+            self.assertEqual((self.code/'manage.py').read_text(),'old runtime')
+        finally:
+            child.communicate('',timeout=5)
     def test_rerun_from_archive_preserves_archive(self):
         self.execute(self.updater());archive=self.base/'updates'/('update-'+PAYLOAD['version']+'.sh')
         self.execute(FakeUpdater(archive,PAYLOAD,self.root,prerelease=True));self.assertTrue(archive.exists())

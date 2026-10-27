@@ -4336,6 +4336,18 @@ class Updater:
         self.code=self.path('/usr/lib/vpn');self.helpers=self.path('/usr/libexec/vpn')
         self.run_dir=None
     def path(self,value):return self.root/value.lstrip('/')
+    @contextlib.contextmanager
+    def package_guard(self):
+        # Native APT/dpkg use POSIX record locks. Retain them through code deployment
+        # so a package upgrade cannot replace the same files halfway through.
+        with contextlib.ExitStack() as stack:
+            for filename in ('/var/lib/dpkg/lock-frontend','/var/lib/dpkg/lock','/var/lib/apt/lists/lock','/var/cache/apt/archives/lock'):
+                path=self.path(filename)
+                if not path.exists():continue
+                stream=stack.enter_context(path.open('r+'))
+                try:fcntl.lockf(stream,fcntl.LOCK_EX|fcntl.LOCK_NB)
+                except BlockingIOError:raise UpdateError('Ubuntu package maintenance is running; retry later.') from None
+            yield
     def command(self,args,check=True):
         with (self.run_dir/'commands.log').open('a') as log:
             log.write('\n$ '+shlex.join(map(str,args))+'\n');log.flush()
@@ -4362,7 +4374,7 @@ class Updater:
             os_release=self.path('/etc/os-release').read_text()
             if 'ID=ubuntu' not in os_release or 'VERSION_ID="24.04"' not in os_release:raise UpdateError('Ubuntu 24.04 required.')
         self.base.mkdir(mode=0o700,parents=True,exist_ok=True)
-        with (self.base/'maintenance.lock').open('a') as maintenance,(self.base/'operation.lock').open('a') as operation:
+        with (self.base/'maintenance.lock').open('a') as maintenance,(self.base/'operation.lock').open('a') as operation,self.package_guard():
             try:
                 fcntl.flock(maintenance,fcntl.LOCK_EX|fcntl.LOCK_NB)
                 fcntl.flock(operation,fcntl.LOCK_EX|fcntl.LOCK_NB)
