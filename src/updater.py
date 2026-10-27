@@ -184,6 +184,9 @@ class Updater:
                 for path,data in paths.items():atomic(path,data,0o644 if path.name=='VERSION' else 0o700)
                 self.command(['bash','-c','set -Eeuo pipefail; source "$1"; eval "$(python3 /usr/lib/vpn/manage.py state-shell)"; write_firewall','vpn-update',self.helpers/'setup.sh'])
                 self.command(['python3',self.code/'manage.py','refresh-web'])
+                # Package removal stops these timers. A verified application
+                # redeployment must also resume monitoring and maintenance.
+                self.command(['systemctl','start','vpn-watchdog.timer','vpn-maintenance.timer'])
                 self.command(['systemctl','is-active','vpn-control','vpn-management','vpn-downloads','ipsec','xl2tpd','wg-quick@wg0','AdGuardHome'])
                 journal['status']='complete';atomic(self.run_dir/'journal.json',json.dumps(journal))
             except BaseException:
