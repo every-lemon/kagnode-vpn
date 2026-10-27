@@ -70,9 +70,9 @@ class IdentityChanges(unittest.TestCase):
         business=Business(self.backend.repo)
         resource=business.change(dict(action='resource-save',name='Office',cidr='192.168.20.0/24',protocol='tcp',ports='443'))
         group=business.change(dict(action='group-add',name='Staff',policy='{"internet":true,"isolation":true,"rules":[]}'))
-        def action(name,**values):
+        def action(action_name,**values):
             with patch.object(vpn_policy,'apply'):
-                return self.controller.action(dict(actor=self.actor,action=name,**values))
+                return self.controller.action(dict(actor=self.actor,action=action_name,**values))
         action('group-rule',id=group,effect='deny',resource=resource)
         action('group-settings',id=group,name='Staff renamed',internet='no',isolation='yes')
         saved=business.snapshot()['groups'][group]
