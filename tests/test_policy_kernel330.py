@@ -59,6 +59,14 @@ with tempfile.TemporaryDirectory() as tmp:
  command(['iptables','-C','VPNSTACK-LAN-IN','-i','wg0','-s','10.66.66.2','-d','192.168.0.8','-p','udp','--dport','53','-j','RETURN'])
  command(['iptables','-C','VPNSTACK-LAN-IN','-j','DROP'])
  command(['iptables','-C','VPNSTACK-LAN-FWD','-i','wg0','-s','10.66.66.2','-d','192.168.0.0/24','-j','RETURN'])
+ # Boot/rebuild: a missing WireGuard interface must not break firewall startup
+ # or retain a grant. Reconcile again after wg-quick recreates its exact peer.
+ command(['ip','link','delete','wg0']);p.apply(b)
+ assert not any('wg0' in row for ident,row in p.grants(b,identities=True))
+ command(['iptables','-C','VPNSTACK-LAN-FWD','-j','DROP'])
+ command(['ip','link','add','wg0','type','wireguard'])
+ command(['wg','set','wg0','peer',public,'allowed-ips','10.66.66.2/32']);p.apply(b)
+ command(['iptables','-C','VPNSTACK-LAN-FWD','-i','wg0','-s','10.66.66.2','-d','192.168.0.0/24','-j','RETURN'])
  business.change(dict(action='access-policy',kind='device',id=d,policy='{}'));p.apply(b)
  assert m.command(rule(257),check=False).returncode!=0
  command(['iptables','-C','VPNSTACK-LAN-FWD','-i','wg0','-s','10.66.66.2','-d','192.168.0.0/24','-j','DROP'])

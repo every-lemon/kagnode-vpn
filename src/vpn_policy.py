@@ -328,9 +328,14 @@ def apply(backend, skip_unchanged=False, override=None, commit=None, business_sn
         # Admission changes follow verified drops, before committing metadata.
         from vpn_business import expired
         configured=state.get('clients',{})
+        # The firewall starts before wg-quick at boot and during a rebuild. No
+        # interface means no authenticated peers and therefore no WG grants.
+        # wg-quick's post-start hook reconciles again once the interface exists.
+        wg_active=any(d.get('protocols',{}).get('wireguard',{}).get('status')=='active' for d in registry['devices'].values())
+        wg_present=wg_active and 'wg0' in command(backend,['wg','show','interfaces']).stdout.split()
         for ident, device in registry['devices'].items():
             record=device.get('protocols',{}).get('wireguard',{})
-            if record.get('status')!='active': continue
+            if record.get('status')!='active' or not wg_present: continue
             entry=configured.get(record['backend'],{}).get('wireguard',{})
             public=entry.get('public'); address=entry.get('address')
             if not public or not address: continue

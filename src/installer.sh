@@ -387,10 +387,15 @@ FIREWALL_SERVICE
 [Unit]
 Requires=vpn-firewall.service
 After=vpn-firewall.service load-iptables-rules.service netfilter-persistent.service
+[Service]
+ExecStartPost=/usr/bin/python3 /usr/lib/vpn/manage.py policy-apply
 WG_SERVICE
   systemctl daemon-reload
   systemctl enable vpn-firewall
   systemctl restart vpn-firewall
+  # Restarting a required firewall stops wg-quick. Restore the configured tunnel
+  # only after the firewall succeeded; its post-start hook verifies live policy.
+  if [[ -f /etc/wireguard/wg0.conf ]]; then systemctl start wg-quick@wg0; fi
 }
 setup_wireguard() {
   local server_key server_pub
