@@ -34,6 +34,12 @@ class SystemdTests(unittest.TestCase):
             call('daemon-reload');call('start',tunnel)
             before=call('show',tunnel,'-p','InvocationID','--value')
             call('restart',firewall)
+            # systemctl waits for the requested unit; ordered dependent restart
+            # jobs may still be activating when that command returns.
+            deadline=time.monotonic()+10
+            while call('show',tunnel,'-p','ActiveState','--value')!='active':
+                self.assertLess(time.monotonic(),deadline,'Dependent tunnel did not restart')
+                time.sleep(.05)
             self.assertEqual(call('is-active',tunnel),'active')
             self.assertNotEqual(before,call('show',tunnel,'-p','InvocationID','--value'))
             call('stop',firewall)
