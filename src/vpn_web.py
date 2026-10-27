@@ -1403,6 +1403,9 @@ def diagnostics(backend):
 
 def worker_main():
     import sys
+    # The deployed entrypoint is web.py, while shared renderers import vpn_web.
+    # Register this same module rather than depending on the development src path.
+    sys.modules.setdefault('vpn_web',sys.modules[__name__])
     if os.geteuid() == 0:
         raise SystemExit('HTTP workers must run unprivileged.')
     role = 'management' if '--management' in sys.argv else 'downloads'
@@ -1413,7 +1416,7 @@ def worker_main():
           channel_timeout=15, cleanup_interval=1, max_request_header_size=16384,
           max_request_body_size=65536, clear_untrusted_proxy_headers=True, trusted_proxy=config.get('trusted_proxy') or None,
           trusted_proxy_headers={'x-forwarded-proto'} if config.get('trusted_proxy') else set(),
-          channel_request_lookahead=0, ident='VPNStack', ipv6=False)
+          channel_request_lookahead=0, ident='VPN', ipv6=False)
 
 
 if __name__ == '__main__':
