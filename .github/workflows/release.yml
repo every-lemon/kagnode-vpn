@@ -17,13 +17,13 @@ jobs:
       - name: Utilities and tests
         run: |
           sudo apt-get update
-          sudo apt-get install -y shellcheck libnss3-tools qrencode python3-venv
+          sudo apt-get install -y shellcheck libnss3-tools qrencode python3-venv wireguard-tools iptables iproute2
           python3 -m venv .venv
           .venv/bin/pip install waitress==3.0.2 pyzipper==0.4.0 pycryptodomex==3.23.0 quickjs==1.19.4
           python3 build.py
           git diff --exit-code -- setup.sh update.sh
           shellcheck -x setup.sh update.sh
-          .venv/bin/python -m unittest discover -s tests -v
+          sudo .venv/bin/python -m unittest discover -s tests -v
           python3 tools/check_secrets.py
       - name: Build and sign
         env:

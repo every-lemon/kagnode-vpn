@@ -47,6 +47,21 @@ class SafetyTests(unittest.TestCase):
         self.legacy();m.atomic(self.root/'etc/ppp/chap-secrets','unrelated l2tpd fixture *\n')
         with self.assertRaisesRegex(RuntimeError,'Unmanaged PPP'):vpn_setup.fresh_start(self.manager,'RESET VPN AND ADGUARD',self.root)
         self.assertFalse(self.commands);self.assertTrue((self.root/'etc/ipsec.d/key.db').exists())
+    def test_reset_refuses_to_delete_when_an_old_engine_is_still_active(self):
+        self.legacy()
+        def command(args,**kw):
+            return subprocess.CompletedProcess(args,0,'active\n' if args[1:3]==['show','ipsec'] else '','')
+        self.manager.command=command
+        with self.assertRaisesRegex(RuntimeError,'Could not retire ipsec'):
+            vpn_setup.fresh_start(self.manager,'RESET VPN AND ADGUARD',self.root)
+        self.assertTrue((self.root/'etc/ipsec.d/key.db').exists())
+        self.assertEqual(json.loads((self.base/'reset-progress.json').read_text())['stage'],'inventory')
+    def test_reset_and_other_maintenance_are_serialized(self):
+        self.legacy()
+        with Coordinator(self.manager).exclusive():
+            with self.assertRaisesRegex(RuntimeError,'Maintenance'):
+                vpn_setup.fresh_start(self.manager,'RESET VPN AND ADGUARD',self.root)
+        self.assertFalse(self.commands)
     def test_interrupted_reset_resumes_without_reactivating_old_keys(self):
         self.legacy();original=vpn_setup.shutil.rmtree
         def fail(path,*args,**kw):

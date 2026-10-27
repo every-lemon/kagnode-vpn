@@ -19,6 +19,13 @@ def stage(manager, name):
 def fresh_start(manager, confirmation, root=Path('/')):
     if confirmation != 'RESET VPN AND ADGUARD':
         raise ValueError('Type RESET VPN AND ADGUARD to authorize the fresh start.')
+    from vpn_maintenance import Coordinator
+    manager.BASE.mkdir(mode=0o700,parents=True,exist_ok=True)
+    with Coordinator(manager).exclusive():
+        return _fresh_start(manager,root)
+
+
+def _fresh_start(manager,root):
     root=Path(root)
     legacy=root/'root/vpn-stack'; source=legacy/'state.json'
     marker=root/'var/lib/vpn/reset-progress.json'
@@ -54,6 +61,11 @@ def fresh_start(manager, confirmation, root=Path('/')):
     units=['vpn-stack-control.socket','vpn-stack-control','vpn-stack-downloads','vpn-stack-management','vpn-stack-watchdog.timer','vpn-stack-cleanup.timer','vpn-stack-management-expire.timer','AdGuardHome','ipsec','xl2tpd','wg-quick@wg0']
     for unit in units:
         manager.command(['systemctl','disable','--now',unit],check=False)
+    for unit in units:
+        active=manager.command(['systemctl','show',unit,'-p','ActiveState','--value'],check=False).stdout.strip()
+        enabled=manager.command(['systemctl','is-enabled',unit],check=False).stdout.strip()
+        if active in ('active','activating','deactivating','reloading') or enabled in ('enabled','enabled-runtime'):
+            raise RuntimeError('Could not retire '+unit+'. Reset stopped before deleting data; inspect its system journal.')
     if state['stage']=='inventory':
         inventory={}
         for relative in state['paths']:

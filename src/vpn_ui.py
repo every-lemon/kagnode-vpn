@@ -151,20 +151,27 @@ def multi_select(title, options):
             selected.add(key)
 
 
-def ask(title, default='', secret=False):
+def ask(title, default='', secret=False, validate=None):
     if not enabled():
-        if secret:
-            value = getpass.getpass(title + ': ')
-        else:
-            print(title + (f' [{default}]' if default else '') + ': ', end='', file=sys.stderr, flush=True)
-            value = sys.stdin.readline()
-            if not value:
-                raise Cancel()
-            value = value.rstrip('\r\n')
-        return value or default
+        while True:
+            if secret:
+                value = getpass.getpass(title + ': ')
+            else:
+                print(title + (f' [{default}]' if default else '') + ': ', end='', file=sys.stderr, flush=True)
+                value = sys.stdin.readline()
+                if not value:
+                    raise Cancel()
+                value = value.rstrip('\r\n')
+            value = value or default
+            try:
+                if validate: validate(value)
+                return value
+            except ValueError as exc:
+                print(str(exc),file=sys.stderr)
     def render(screen):
         screen.keypad(True)
         value = str(default)
+        error = ''
         try:
             curses.curs_set(1)
         except curses.error:
@@ -174,12 +181,18 @@ def ask(title, default='', secret=False):
             draw(screen, 0, title, curses.A_BOLD)
             draw(screen, 2, '*' * len(value) if secret else value)
             draw(screen, 4, 'Enter/Tab accept · Esc cancel · Backspace delete · Ctrl-U clear')
+            draw(screen, 6, error)
             screen.refresh()
             key = screen.get_wch()
             if key in ('\x1b',):
                 raise Cancel()
             if key in ('\n', '\r', '\t', curses.KEY_ENTER):
-                return value
+                try:
+                    if validate: validate(value)
+                    return value
+                except ValueError as exc:
+                    error=str(exc)
+                    continue
             if key in (curses.KEY_BACKSPACE, '\x7f', '\b'):
                 value = value[:-1]
             elif key == '\x15':

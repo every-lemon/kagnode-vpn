@@ -2,8 +2,30 @@
 import base64
 import ipaddress
 import re
+import json
+import subprocess
+import time
 import shutil
 from pathlib import Path
+
+
+def generate_certificate(manager,args,data=None):
+    stage=manager.BASE/'native-setup.json'
+    record={'stage':'certificate','nickname':args[args.index('-n')+1],'started':time.time()}
+    manager.atomic(stage,json.dumps(record))
+    try:
+        # RSA generation under emulation can exceed three minutes. Keep a finite
+        # setup-only limit without reducing key strength or affecting repairs.
+        result=manager.command(args,data=data,timeout=600)
+        record.update(status='complete',finished=time.time())
+        return result
+    except subprocess.TimeoutExpired as exc:
+        def text(value):return (value.decode(errors='replace') if isinstance(value,bytes) else value or '')[-8192:]
+        record.update(status='timed-out',stdout=text(exc.stdout),stderr=text(exc.stderr),finished=time.time())
+        raise RuntimeError('Certificate generation timed out. Inspect /var/lib/vpn/native-setup.json; rerun setup to resume existing trust material.') from None
+    except Exception as exc:
+        record.update(status='failed',error=str(exc)[:1000],finished=time.time());raise
+    finally:manager.atomic(stage,json.dumps(record,indent=2))
 
 
 def install(manager):
@@ -42,13 +64,13 @@ def install(manager):
     ca='IKEv2 VPN CA'; server=state['endpoint']
     try:
         if not exists(ca):
-            manager.command(common+['-m',str(secrets.randbelow(2**31-1)+1),'-x','-n',ca,'-s','O=IKEv2 VPN,CN='+ca,'-t','CT,,','-2'],data='y\n\nN\n')
+            generate_certificate(manager,common+['-m',str(secrets.randbelow(2**31-1)+1),'-x','-n',ca,'-s','O=IKEv2 VPN,CN='+ca,'-t','CT,,','-2'],data='y\n\nN\n')
         if not exists(server):
             try:
                 ipaddress.IPv4Address(server); san='ip:'+server+',dns:'+server
             except ValueError:
                 san='dns:'+server
-            manager.command(common+['-m',str(secrets.randbelow(2**31-1)+1),'-c',ca,'-n',server,'-s','O=IKEv2 VPN,CN='+server,'-t',',,','--keyUsage','digitalSignature,keyEncipherment','--extKeyUsage','serverAuth','--extSAN',san])
+            generate_certificate(manager,common+['-m',str(secrets.randbelow(2**31-1)+1),'-c',ca,'-n',server,'-s','O=IKEv2 VPN,CN='+server,'-t',',,','--keyUsage','digitalSignature,keyEncipherment','--extKeyUsage','serverAuth','--extSAN',san])
     finally:
         noise.unlink(missing_ok=True)
     try:

@@ -11,6 +11,9 @@ import sys
 import termios
 import time
 import unittest
+import io
+import types
+from unittest.mock import patch
 from test_manager import ROOT
 import vpn_ui as ui
 
@@ -65,3 +68,18 @@ class TerminalTests(unittest.TestCase):
         self.assertEqual(ui.menu_key(curses.KEY_UP, 0, 10), 0)
         self.assertEqual(ui.menu_key(curses.KEY_END, 0, 10), 9)
         self.assertEqual(ui.menu_key(curses.KEY_NPAGE, 8, 10), 9)
+
+    def test_plain_validation_retries_without_accepting_invalid_value(self):
+        from vpn_console import name_valid
+        with patch.object(ui,'enabled',return_value=False),patch('sys.stdin',io.StringIO('\nPhone\n')),patch('sys.stderr',io.StringIO()) as output:
+            self.assertEqual(ui.ask('Name',validate=name_valid),'Phone')
+            self.assertIn('1–80 printable',output.getvalue())
+
+    def test_device_revocation_requires_confirmation_and_identifies_protocol(self):
+        from vpn_console import workflow
+        backend=types.SimpleNamespace(load=lambda:{'users':{'u':{'name':'User'}},'devices':{'d':{'name':'Phone','user':'u','protocols':{'ikev2':{'status':'active'}}}}})
+        with patch.object(ui,'choose',side_effect=['d','revoke','ikev2']),patch.object(ui,'confirm',return_value=False):
+            self.assertIsNone(workflow('devices',backend,None,{},{}))
+        with patch.object(ui,'choose',side_effect=['d','revoke','ikev2']),patch.object(ui,'confirm',return_value=True):
+            form=workflow('devices',backend,None,{},{})
+        self.assertEqual((form['device'],form['protocol'],form['confirm']),('d','ikev2','REVOKE'))
