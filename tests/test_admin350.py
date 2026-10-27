@@ -115,6 +115,14 @@ class AdminTests(unittest.TestCase):
         with self.assertRaises(web.WebError):
             self.store.inspect(token)
 
+    def test_prepared_delivery_does_not_replace_acting_administrator_in_device_view(self):
+        bundle(self.backend,self.ident,['wireguard'])
+        data=self.rpc(dict(op='view',session=self.session,peer='192.168.0.22',host='192.168.0.8:9001',view='device',device=self.ident))
+        self.assertEqual(data['identity']['id'],self.actor)
+        self.assertEqual(data['identity']['role'],'owner')
+        from vpn_dashboard import render
+        self.assertIn(b'app-shell',render(data,view='device',device=self.ident))
+
     def test_public_delivery_null_origin_form_claims_once_and_keeps_referrer_private(self):
         meta = bundle(self.backend, self.ident, ['wireguard'])
         token = self.store.issue(self.ident, meta['filename'], meta['generation'])

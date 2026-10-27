@@ -87,14 +87,14 @@ CREATE TABLE IF NOT EXISTS flashes(session TEXT PRIMARY KEY,message TEXT NOT NUL
 
     def flash(self, session, message=None):
         with self.connect() as db:
-            db.execute('DELETE FROM flashes WHERE expires<=?', (self.monotonic(),))
             key = digest(session)
             if message is not None:
+                db.execute('DELETE FROM flashes WHERE expires<=?', (self.monotonic(),))
                 db.execute('INSERT OR REPLACE INTO flashes VALUES (?,?,?)', (key, str(message)[:1000], self.monotonic()+60))
                 return ''
-            row = db.execute('SELECT message FROM flashes WHERE session=?', (key,)).fetchone()
-            db.execute('DELETE FROM flashes WHERE session=?', (key,))
-        return row[0] if row else ''
+            row = db.execute('SELECT message,expires FROM flashes WHERE session=?', (key,)).fetchone()
+            if row:db.execute('DELETE FROM flashes WHERE session=?', (key,))
+        return row[0] if row and row[1]>self.monotonic() else ''
 
     def link_status(self, hashes=None):
         with self.connect() as db:
@@ -434,10 +434,10 @@ class Controller:
                 for ident, raw in rows:
                     item = registry['devices'][ident]
                     valid = True
-                    for protocol, identity in json.loads(raw).get('identity', {}).items():
+                    for protocol, profile_identity in json.loads(raw).get('identity', {}).items():
                         value = item.get('protocols', {}).get(protocol, {})
                         expected = value.get('backend','') + ':' + (value.get('export') or {}).get('generation','')
-                        if value.get('status') != 'active' or (protocol == 'ikev2' and identity != expected):
+                        if value.get('status') != 'active' or (protocol == 'ikev2' and profile_identity != expected):
                             valid = False
                     if valid:
                         deliveries.append(ident)
