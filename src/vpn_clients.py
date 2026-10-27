@@ -578,17 +578,13 @@ get_export_dir() { export_dir=/var/lib/vpn/; export_to_home_dir=0; }
             raise ClientError('Active L2TP credentials required.')
         name = record['backend']
         chap = self.m.ETC / 'ppp/chap-secrets'
-        passwd = self.db / 'passwd'
-        old_chap, old_passwd, old_state = chap.read_bytes(), passwd.read_bytes(), self.m.STATE.read_bytes()
-        hashed = self.command(['openssl', 'passwd', '-1', '-stdin'], data=(password + '\n').encode()).decode().strip()
+        old_chap, old_state = chap.read_bytes(), self.m.STATE.read_bytes()
         export_path = self.base / 'clients/l2tp' / (name + '.txt')
         old_export = export_path.read_bytes() if export_path.exists() else None
         self.operation(ident, 'rotate-l2tp', 'pending')
         try:
             lines = [line for line in old_chap.decode().splitlines() if not line.startswith('"' + name + '" ')]
             self.m.atomic(chap, '\n'.join(lines) + f'\n"{name}" l2tpd "{password}" *\n')
-            lines = [line for line in old_passwd.decode().splitlines() if not line.startswith(name + ':')]
-            self.m.atomic(passwd, '\n'.join(lines) + f'\n{name}:{hashed}:xauth-psk\n')
             state = self.m.load()
             state['clients'][name]['l2tp']['password'] = password
             self.m.save(state)
@@ -598,7 +594,6 @@ get_export_dir() { export_dir=/var/lib/vpn/; export_to_home_dir=0; }
                 vpn_policy.configure_ppp(self)
         except Exception:
             self.m.atomic(chap, old_chap)
-            self.m.atomic(passwd, old_passwd)
             self.m.atomic(self.m.STATE, old_state)
             if old_export is not None:
                 self.m.atomic(export_path, old_export)

@@ -125,13 +125,13 @@ class RuntimeTests(unittest.TestCase):
 
     def test_l2tp_add_revoke_and_private_exports(self):
         m.atomic(self.etc / 'ppp/chap-secrets', '# existing\n')
-        m.atomic(self.etc / 'ipsec.d/passwd', '')
         with patch.object(m, 'command', return_value=subprocess.CompletedProcess([], 0, 'HASH\n', '')):
             m.l2tp_add('alice', 'custom-password-123')
         path = self.base / 'clients/l2tp/alice.txt'
         self.assertEqual(path.stat().st_mode & 0o777, 0o600)
         self.assertIn('Username: alice', path.read_text())
-        self.assertIn('alice:HASH:xauth-psk', (self.etc / 'ipsec.d/passwd').read_text())
+        self.assertFalse((self.etc / 'ipsec.d/passwd').exists())
+        self.assertIn('custom-password-123',(self.etc/'ppp/chap-secrets').read_text())
         m.revoke_l2tp('alice')
         self.assertNotIn('alice', (self.etc / 'ppp/chap-secrets').read_text())
         self.assertFalse(path.exists())
@@ -151,7 +151,7 @@ class RuntimeTests(unittest.TestCase):
         failed = False
         def failing_atomic(path, data, mode=0o600):
             nonlocal failed
-            if Path(path) == passwd and 'alice:' in data and not failed:
+            if not failed and Path(path) == m.STATE and 'alice' in data:
                 failed = True
                 raise OSError('simulated write failure')
             return original_atomic(path, data, mode)

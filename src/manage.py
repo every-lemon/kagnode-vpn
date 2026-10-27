@@ -447,25 +447,19 @@ def l2tp_add(name, password):
     s = load()
     valid_password(password)
     chap = ETC / 'ppp/chap-secrets'
-    passwd = ETC / 'ipsec.d/passwd'
     old = chap.read_text()
-    old_passwd = passwd.read_text()
     if any(line.startswith('"' + name + '" ') for line in old.splitlines()):
         raise ValueError('L2TP username already exists.')
-    hashed = command(['openssl', 'passwd', '-1', '-stdin'], data=password + '\n').stdout.strip()
-    for path in (chap, passwd):
-        backup(path)
+    backup(chap)
     old_state = STATE.read_bytes()
     export = BASE / 'clients/l2tp' / (name + '.txt')
     try:
         atomic(chap, old + f'\n"{name}" l2tpd "{password}" *\n')
-        atomic(passwd, old_passwd + f'\n{name}:{hashed}:xauth-psk\n')
         s['clients'].setdefault(name, {})['l2tp'] = {'password': password}
         save(s)
         export_l2tp(name)
     except Exception:
         atomic(chap, old)
-        atomic(passwd, old_passwd)
         atomic(STATE, old_state)
         export.unlink(missing_ok=True)
         raise
@@ -485,13 +479,13 @@ def revoke_l2tp(name):
     s = load()
     if 'l2tp' not in s['clients'].get(name, {}):
         raise ValueError('Managed L2TP user not found.')
-    chap, passwd = ETC / 'ppp/chap-secrets', ETC / 'ipsec.d/passwd'
+    chap = ETC / 'ppp/chap-secrets'
     export = BASE / 'clients/l2tp' / (name + '.txt')
-    originals = {p: p.read_bytes() if p.exists() else None for p in (chap, passwd, STATE, export)}
+    originals = {p: p.read_bytes() if p.exists() else None for p in (chap, STATE, export)}
     try:
-        for path, prefix in [(chap, '"' + name + '" '), (passwd, name + ':')]:
-            backup(path)
-            atomic(path, '\n'.join(line for line in path.read_text().splitlines() if not line.startswith(prefix)) + '\n')
+        backup(chap)
+        prefix='"'+name+'" '
+        atomic(chap, '\n'.join(line for line in chap.read_text().splitlines() if not line.startswith(prefix)) + '\n')
         s['clients'][name].pop('l2tp')
         save(s)
         export.unlink(missing_ok=True)
@@ -501,21 +495,6 @@ def revoke_l2tp(name):
                 atomic(path, data)
         raise
     print('Credentials revoked. Existing L2TP sessions remain active until they disconnect.')
-
-
-def bootstrap():
-    s = load()
-    if 'l2tp' not in s['clients'].get('first-device', {}):
-        s['clients'].setdefault('first-device', {})['l2tp'] = {'password': s['l2tp_password']}
-        save(s)
-    export_l2tp('first-device')
-    if 'wireguard' not in s['clients'].get('first-device', {}):
-        add_wg('first-device')
-    if 'ikev2' not in load()['clients'].get('first-device', {}):
-        ike_operation('first-device', 'export', True)
-        s = load()
-        s['clients'].setdefault('first-device', {})['ikev2'] = {'on_demand': True}
-        save(s)
 
 
 def ports():
@@ -613,37 +592,6 @@ def manager_self():
 def clients_backend():
     import vpn_clients
     return vpn_clients.Backend(manager_self())
-
-def ike_operation(name, action, enabled=True):
-    backend = clients_backend()
-    backend.migrate()
-    reg = backend.load()
-    ident = next((key for key, device in reg['devices'].items()
-                  if device['protocols'].get('ikev2', {}).get('backend') == name), None)
-    if ident is None:
-        ident = 'dev-' + __import__('hashlib').sha256(name.encode()).hexdigest()[:12]
-        if action == 'add':
-            if ident not in reg['devices']:
-                reg['devices'][ident] = {'name': name, 'user': 'legacy', 'protocols': {}}
-                backend.save(reg)
-            backend.protocol_add(ident, 'ikev2')
-        else:
-            if name not in backend.cert_names():
-                raise ValueError('Client certificate not found; recover unassigned certificates from the client menu.')
-            reg['devices'].setdefault(ident, {'name': name, 'user': 'legacy', 'protocols': {}})
-            reg['devices'][ident]['protocols']['ikev2'] = {'backend': name, 'status': 'active', 'export': None}
-            backend.save(reg)
-    if action == 'revoke':
-        return backend.revoke(ident, 'ikev2')
-    return backend.export_ike(ident, 'other', enabled=enabled)
-
-def profiles():
-    if not STATE.exists() or not load().get('installed'):
-        print('Install VPN first.')
-        return
-    import vpn_ui
-    vpn_ui.profiles(manager_self())
-
 
 def main():
     os.umask(0o077)
