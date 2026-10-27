@@ -13,6 +13,7 @@ def configure(manager, form):
         if uri.scheme!='https' or not uri.hostname or uri.username or uri.password or uri.path or uri.query or uri.fragment or uri.port not in (None,443):
             raise ValueError('Use an HTTPS profile-delivery origin on port 443, or leave it blank.')
         if not re.fullmatch(r'(?:[a-zA-Z0-9-]+\.)+[a-zA-Z]{2,63}',uri.hostname):raise ValueError('Invalid delivery hostname.')
+        delivery='https://'+uri.hostname.lower()
     mode=form.get('mode','lan')
     if mode not in ('lan','vpn','https'): raise ValueError('Choose LAN, approved VPN devices, or HTTPS.')
     devices=[v for v in form.get('devices',','.join(state.get('admin_devices',[]))).split(',') if v]
@@ -24,6 +25,7 @@ def configure(manager, form):
         if uri.scheme!='https' or not uri.hostname or uri.username or uri.password or uri.path or uri.query or uri.fragment or uri.port not in (None,443):
             raise ValueError('Use an HTTPS origin on port 443, such as https://vpn.example.com.')
         if not re.fullmatch(r'(?:[a-zA-Z0-9-]+\.)+[a-zA-Z]{2,63}',uri.hostname): raise ValueError('Invalid HTTPS hostname.')
+        origin='https://'+uri.hostname.lower()
         ipaddress.IPv4Address(proxy)
         if form.get('managed')=='yes':
             cert=Path(form.get('cert','')); key=Path(form.get('key',''))

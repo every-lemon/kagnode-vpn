@@ -41,6 +41,12 @@ class AccessTests(unittest.TestCase):
         request={'peer':'192.168.0.22','host':'192.168.0.8:9001','origin':'http://192.168.0.8:9001','forwarded_proto':'https'}
         self.assertEqual(context(self.state,request),'http://192.168.0.8:9001')
 
+    def test_default_https_port_and_hostname_case_match_browser_origin(self):
+        state=configure(self.manager,{'mode':'https','origin':'HTTPS://Admin.Example.com:443/','vpd_origin':'HTTPS://Profiles.Example.com:443/','proxy':'192.168.0.2','tls_verified':'yes'})
+        self.assertEqual(state['admin_origin'],'https://admin.example.com')
+        self.assertEqual(state['vpd_origin'],'https://profiles.example.com')
+        self.assertEqual(context(state,{'peer':'192.168.0.2','host':'admin.example.com','origin':'https://admin.example.com','forwarded_proto':'https'}),'https://admin.example.com')
+
 class RepairTests(unittest.TestCase):
     def setUp(self):
         self.temp=tempfile.TemporaryDirectory();self.addCleanup(self.temp.cleanup)
