@@ -458,6 +458,7 @@ class Controller:
                     extra['administrators']=[dict(id=i,username=n,role=r,enabled=bool(en),enrolled=bool(mfa)) for i,n,r,en,mfa in db.execute('SELECT id,username,role,enabled,enrolled FROM administrators ORDER BY username LIMIT 200')]
             if view=='device' and request.get('device') in registry['devices']:
                 extra['effective']=business.effective(registry,request['device'],values)
+                extra['admin_approved']=request['device'] in self.state.get('admin_devices',[])
             if view=='system':
                 from vpn_maintenance import Coordinator
                 extra['maintenance']=Coordinator(self.backend.m).status()

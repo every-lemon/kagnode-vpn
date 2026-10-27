@@ -49,3 +49,18 @@ class IdentityChanges(unittest.TestCase):
             with self.assertRaisesRegex(RuntimeError,'kernel rejected'):self.backend.revoke(self.ident,'wireguard')
             disconnect.assert_called_once_with(self.backend,self.ident,'wireguard','native-phone')
         self.assertEqual(self.backend.load()['devices'][self.ident]['protocols']['wireguard']['status'],'revoked')
+
+    def test_access_forms_display_current_state_instead_of_reset_defaults(self):
+        from vpn_dashboard import device_access,maintenance
+        from vpn_admin import form
+        data={'csrf':'fixture','identity':{'role':'owner'},'admin_approved':True,
+              'registry':{'devices':{'d':{'disabled':True,'expires':1893456000}}},
+              'business':{'groups':{'ungrouped':{'name':'ungrouped'},'office':{'name':'Office'}},'members':{'d':'office'}}}
+        rendered=device_access(data,'d',form)
+        self.assertIn('value="office" selected',rendered)
+        self.assertIn('value="yes" selected>Disabled',rendered)
+        self.assertIn('value="2030-01-01T00:00"',rendered)
+        self.assertIn('value="yes" selected>Approve',rendered)
+        rendered=maintenance({'csrf':'fixture','identity':{'role':'owner'},'maintenance':{'mode':'window'},'access':{'admin_mode':'https'}},form)
+        self.assertIn('value="window" selected',rendered)
+        self.assertIn('value="https" selected',rendered)
