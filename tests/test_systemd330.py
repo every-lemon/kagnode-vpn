@@ -20,6 +20,29 @@ import vpn_harden as harden
 
 @unittest.skipUnless(os.geteuid() == 0 and Path('/run/systemd/system').is_dir(), 'requires root and systemd')
 class SystemdTests(unittest.TestCase):
+    def test_wireguard_dependency_restarts_after_firewall_and_stops_with_it(self):
+        name='vpn4-order-'+uuid.uuid4().hex[:8]
+        units=Path('/run/systemd/system');firewall=name+'-firewall.service';tunnel=name+'-tunnel.service'
+        source=(ROOT/'src/installer.sh').read_text()
+        dependency=source.split("<<'WG_SERVICE'\n",1)[1].split('\nWG_SERVICE',1)[0]
+        dependency=dependency.replace('vpn-firewall.service',firewall).replace('/usr/bin/python3 /usr/lib/vpn/manage.py policy-apply','/bin/true')
+        base='[Service]\nType=oneshot\nRemainAfterExit=yes\nExecStart=/bin/true\n'
+        def call(*args):return subprocess.run(['systemctl',*args],check=True,capture_output=True,text=True,timeout=30).stdout.strip()
+        try:
+            (units/firewall).write_text(base)
+            (units/tunnel).write_text(base+dependency)
+            call('daemon-reload');call('start',tunnel)
+            before=call('show',tunnel,'-p','InvocationID','--value')
+            call('restart',firewall)
+            self.assertEqual(call('is-active',tunnel),'active')
+            self.assertNotEqual(before,call('show',tunnel,'-p','InvocationID','--value'))
+            call('stop',firewall)
+            self.assertEqual(call('show',tunnel,'-p','ActiveState','--value'),'inactive')
+        finally:
+            subprocess.run(['systemctl','stop',tunnel,firewall],capture_output=True,timeout=30)
+            for unit in (tunnel,firewall):(units/unit).unlink(missing_ok=True)
+            subprocess.run(['systemctl','daemon-reload'],capture_output=True,timeout=30)
+
     def test_missing_nftables_lock_is_created_before_controller_sandbox(self):
         name = 'vpnstack-it-lock-' + uuid.uuid4().hex[:8]
         unit_dir = Path('/run/systemd/system')

@@ -386,6 +386,7 @@ FIREWALL_SERVICE
   cat > /etc/systemd/system/wg-quick@wg0.service.d/vpn.conf <<'WG_SERVICE'
 [Unit]
 Requires=vpn-firewall.service
+PartOf=vpn-firewall.service
 After=vpn-firewall.service load-iptables-rules.service netfilter-persistent.service
 [Service]
 ExecStartPost=/usr/bin/python3 /usr/lib/vpn/manage.py policy-apply
