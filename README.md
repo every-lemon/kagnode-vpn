@@ -2,7 +2,7 @@
 
 Ubuntu-native administration for WireGuard, IKEv2, L2TP/IPsec, AdGuard Home and VPN profile delivery.
 
-**4.0.0-beta.1 is under qualification. Do not treat this branch as a production release.**
+**4.0.0-beta.1 is an evaluation prerelease. RC and stable promotion require further real-device qualification.**
 See [qualification status](docs/QUALIFICATION.md) for what has actually been tested.
 
 Target: Ubuntu Server 24.04 LTS amd64, physical server or VM; systemd required.
@@ -16,7 +16,7 @@ sudo apt install ./vpn_4.0.0~beta.1_amd64.deb
 sudo vpn setup --install
 ```
 
-Alternatively, verify release checksums/signature and run the standalone `setup.sh`.
+Alternatively, [verify the signed release](docs/VERIFYING.md) and run the standalone `setup.sh`.
 The setup pauses for first-owner MFA enrollment and the manual AdGuard browser wizard.
 SSH is an explicit choice. No starter VPN clients are created.
 

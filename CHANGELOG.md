@@ -1,6 +1,8 @@
 # Changelog
 
-## 4.0.0-beta.1 — under qualification
+## 4.0.0-beta.1 — 2026-10-27
+
+First evaluation prerelease for Ubuntu Server 24.04 LTS amd64.
 
 - Consolidated VPN project and Ubuntu-native filesystem/package layout.
 - Explicit clean start from 3.x; no automatic legacy-client import or starter client.
@@ -9,5 +11,13 @@
 - Persistent administration and native single-use profile delivery with history/QR controls.
 - Separate Ubuntu security updates and signed application releases.
 - Shared maintenance/reboot coordination and evidence-first managed repair.
+- Native WireGuard startup ordering, Ubuntu Libreswan NSS paths and PPP-only L2TP credentials.
+- Package removal pauses managed tunnel traffic while retaining private state for recovery.
+- Bounded service startup and lightweight health telemetry for constrained servers.
+
+The transition from 3.x is an explicit fresh start with a private recovery backup;
+it is not an in-place client/account migration. Updates within 4.x preserve state.
+Real Apple-device import and an external VPN connection remain qualification gates
+before RC/stable promotion. This beta is not a production-stability claim.
 
 See `docs/QUALIFICATION.md` for actual verification and remaining release gates.
