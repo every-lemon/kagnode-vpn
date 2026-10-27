@@ -44,6 +44,11 @@ class Backend:
         from vpn_backend import Repository
         self.repo = Repository(self.base)
 
+    @property
+    def cert_db(self):
+        from vpn_native import nss_directory
+        return nss_directory(self.m)
+
     def command(self, args, *, data=None, env=None):
         progress = self.base / 'backend-job-health.json'
         try:
@@ -247,7 +252,7 @@ class Backend:
         self.audit(action, ident, status)
 
     def cert_names(self):
-        text = self.command(['certutil', '-L', '-d', 'sql:' + str(self.db)]).decode()
+        text = self.command(['certutil', '-L', '-d', 'sql:' + str(self.cert_db)]).decode()
         # NSS nickname is the text preceding the final trust-flags column.
         names = []
         for line in text.splitlines():
@@ -257,7 +262,7 @@ class Backend:
         return names
 
     def cert(self, nickname):
-        return self.command(['certutil', '-L', '-a', '-d', 'sql:' + str(self.db), '-n', nickname])
+        return self.command(['certutil', '-L', '-a', '-d', 'sql:' + str(self.cert_db), '-n', nickname])
 
     def server_identity(self):
         conf = (self.db / 'ikev2.conf').read_text()
@@ -291,6 +296,10 @@ class Backend:
 
     def helper(self, name, action):
         source = (self.base / 'upstream/ikev2.sh').read_text()
+        database_setting='CERT_DB="sql:/etc/ipsec.d"'
+        if source.count(database_setting)!=1:raise ClientError('Unsupported IKEv2 helper database declaration.')
+        import shlex
+        source=source.replace(database_setting,'CERT_DB='+shlex.quote('sql:'+str(self.cert_db)))
         marker = 'ikev2setup "$@"'
         if source.count(marker) != 1:
             raise ClientError('Unsupported IKEv2 helper entrypoint. Install the reviewed helper with update.sh.')
@@ -407,14 +416,14 @@ get_export_dir() { export_dir=/var/lib/vpn/; export_to_home_dir=0; }
             self.m.atomic(stage / 'ca.pem', ca)
             self.m.atomic(stage / 'client.pem', client)
             expires = self.command(['openssl', 'x509', '-noout', '-enddate'], data=client).decode().strip().removeprefix('notAfter=')
-            self.command(['certutil', '-V', '-u', 'C', '-d', 'sql:' + str(self.db), '-n', nickname])
+            self.command(['certutil', '-V', '-u', 'C', '-d', 'sql:' + str(self.cert_db), '-n', nickname])
             self.command(['openssl', 'verify', '-CAfile', stage / 'ca.pem', stage / 'client.pem'])
             server_file = stage / 'server.pem'
             self.m.atomic(server_file, server_pem)
             self.command(['openssl', 'verify', '-CAfile', stage / 'ca.pem', server_file])
             self.command(['openssl', 'x509', '-in', server_file, '-noout',
                           '-checkip' if re.fullmatch(r'[0-9.]+', server) else '-checkhost', server])
-            self.command(['pk12util', '-d', 'sql:' + str(self.db), '-n', nickname, '-o', p12, '-w', passfile, '-K', ''])
+            self.command(['pk12util', '-d', 'sql:' + str(self.cert_db), '-n', nickname, '-o', p12, '-w', passfile, '-K', ''])
             # Preserve upstream PKCS#12 compatibility encoding, with strong independent passwords.
             encrypted_pem = stage / 'encrypted-key.pem'
             encrypted = self.command(['openssl', 'pkcs12', '-legacy', '-in', p12, '-passin', 'file:' + str(passfile),
@@ -661,7 +670,7 @@ get_export_dir() { export_dir=/var/lib/vpn/; export_to_home_dir=0; }
                 if native in self.cert_names():
                     if native == self.server_identity() or native == 'IKEv2 VPN CA':
                         raise ClientError('Refusing to delete a server or CA identity.')
-                    self.command(['certutil', '-F', '-d', 'sql:' + str(self.db), '-n', native])
+                    self.command(['certutil', '-F', '-d', 'sql:' + str(self.cert_db), '-n', native])
                 folder = self.base / 'exports' / ident
                 if folder.is_symlink():
                     raise ClientError('Unsafe export directory; cleanup stopped.')

@@ -102,6 +102,24 @@ class RealExportTests(unittest.TestCase):
         with self.assertRaises(c.ClientError):
             self.backend.validate_p12(bundle, 'wrong-password-long')
 
+    def test_ubuntu_native_nss_location_keeps_connection_config_and_existing_keys(self):
+        original=self.backend.cert('client-one')
+        native=self.root/'var/lib/ipsec/nss';native.mkdir(parents=True)
+        for filename in ('cert9.db','key4.db','pkcs11.txt'):
+            source=self.db/filename
+            if source.exists():shutil.move(source,native/filename)
+        self.assertEqual(self.backend.cert('client-one'),original)
+        self.assertEqual(self.backend.server_identity(),'vpn.example.test')
+        def helper(args,**kwargs):
+            text=Path(args[1]).read_text()
+            self.assertIn('CERT_DB=sql:'+str(native),text)
+            self.assertIn('IKEV2_CONF="/etc/ipsec.d/ikev2.conf"',text)
+            return b''
+        upstream=self.base/'upstream/ikev2.sh'
+        from test_manager import ROOT
+        m.atomic(upstream,(ROOT/'src/vendor/ikev2.sh').read_bytes())
+        with patch.object(self.backend,'command',side_effect=helper):self.backend.helper('client-one','add')
+
     def test_mismatched_identity_rejected(self):
         result = self.backend.export_ike(self.ident, 'windows', 'independent-password-one')
         bundle = (Path(result['directory']) / (self.ident + '.p12')).read_bytes()

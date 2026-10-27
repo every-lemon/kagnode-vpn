@@ -51,7 +51,7 @@ def _fresh_start(manager,root):
         stamp=time.strftime('%Y%m%dT%H%M%SZ',time.gmtime())
         archive=root/'var/lib/vpn-recovery'/stamp
         archive.mkdir(parents=True,mode=0o700)
-        state={'stage':'inventory','archive':str(archive),'paths':['root/vpn-stack','etc/ipsec.conf','etc/ipsec.secrets','etc/ipsec.d','etc/wireguard/wg0.conf','etc/xl2tpd/xl2tpd.conf','etc/ppp/options.xl2tpd','etc/ppp/chap-secrets','opt/AdGuardHome/AdGuardHome.yaml','opt/AdGuardHome/data'],'ssh_disabled':(legacy/'ssh-disabled').exists()}
+        state={'stage':'inventory','archive':str(archive),'paths':['root/vpn-stack','etc/ipsec.conf','etc/ipsec.secrets','etc/ipsec.d','var/lib/ipsec/nss','etc/wireguard/wg0.conf','etc/xl2tpd/xl2tpd.conf','etc/ppp/options.xl2tpd','etc/ppp/chap-secrets','opt/AdGuardHome/AdGuardHome.yaml','opt/AdGuardHome/data'],'ssh_disabled':(legacy/'ssh-disabled').exists()}
         for name in names | {'first-device'}:
             if __import__('re').fullmatch(r'[A-Za-z0-9_-]{1,80}',name):
                 state['paths'] += ['root/'+name+suffix for suffix in ('.p12','.sswan','.mobileconfig','-README.txt')]

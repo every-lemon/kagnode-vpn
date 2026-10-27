@@ -9,6 +9,22 @@ import shutil
 from pathlib import Path
 
 
+def nss_directory(manager, fresh=False):
+    """Separate engine state from connection files; never create replacement trust."""
+    root=manager.ETC.parent
+    legacy=manager.ETC/'ipsec.d'; native=root/'var/lib/ipsec/nss'
+    config=manager.ETC/'ipsec.conf'
+    if config.exists():
+        match=re.search(r'^\s*nssdir\s*=\s*(\S+)\s*$',config.read_text(),re.M)
+        if match:
+            if match[1] not in ('/etc/ipsec.d','/var/lib/ipsec/nss'):
+                raise RuntimeError('Unmanaged NSS directory. Inspect the IPsec configuration before proceeding.')
+            return root/match[1].lstrip('/')
+    found=[path for path in (native,legacy) if (path/'cert9.db').exists()]
+    if len(found)>1:raise RuntimeError('Two NSS databases found. Select the active nssdir explicitly; no keys were replaced.')
+    return found[0] if found else native if fresh else legacy
+
+
 def generate_certificate(manager,args,data=None):
     stage=manager.BASE/'native-setup.json'
     record={'stage':'certificate','nickname':args[args.index('-n')+1],'started':time.time()}
@@ -49,11 +65,15 @@ def install(manager):
     config = manager.ETC / 'ipsec.conf'
     virtual='%v4:10.0.0.0/8,%v4:172.16.0.0/12,%v4:192.168.0.0/16,%v4:100.64.0.0/10'
     virtual+=''.join(',%v4:!'+state[k] for k in ('wg_net','ike_net','l2tp_net'))
-    manager.atomic(config, 'config setup\n  uniqueids=no\n  ikev1-policy=accept\n  virtual-private='+virtual+'\ninclude /etc/ipsec.d/*.conf\n')
+    nss=nss_directory(manager,fresh=True)
+    nss.mkdir(mode=0o700,parents=True,exist_ok=True)
+    nss.chmod(0o700)
+    location='/'+str(nss.relative_to(manager.ETC.parent))
+    manager.atomic(config, 'config setup\n  uniqueids=no\n  ikev1-policy=accept\n  nssdir='+location+'\n  virtual-private='+virtual+'\ninclude /etc/ipsec.d/*.conf\n')
     db = manager.ETC / 'ipsec.d'
     db.mkdir(mode=0o700,parents=True,exist_ok=True)
-    certdb = 'sql:' + str(db)
-    if not (db / 'cert9.db').exists():
+    certdb = 'sql:' + str(nss)
+    if not (nss / 'cert9.db').exists():
         manager.command(['certutil','-N','--empty-password','-d',certdb])
     def exists(name):
         return manager.command(['certutil','-L','-d',certdb,'-n',name],check=False).returncode == 0

@@ -1225,7 +1225,7 @@ RuntimeDirectory=vpn
 RuntimeDirectoryMode=0750
 RuntimeDirectoryPreserve=yes
 ExecStart=''' + python + ''' /usr/lib/vpn/manage.py web-control
-ReadWritePaths=/var/lib/vpn /var/log/vpn /etc/vpn /etc/wireguard /etc/ipsec.d /etc/ppp /run/vpn /run/xtables.lock -/home -/var/lib/dpkg/lock-frontend -/var/lib/dpkg/lock -/var/lib/apt/lists/lock -/var/cache/apt/archives/lock
+ReadWritePaths=/var/lib/vpn /var/log/vpn /etc/vpn /etc/wireguard /etc/ipsec.d -/var/lib/ipsec/nss /etc/ppp /run/vpn /run/xtables.lock -/home -/var/lib/dpkg/lock-frontend -/var/lib/dpkg/lock -/var/lib/apt/lists/lock -/var/cache/apt/archives/lock
 ''' + common.replace('AF_INET AF_INET6 AF_UNIX', 'AF_INET AF_INET6 AF_UNIX AF_NETLINK') + service_limits() + 'CapabilityBoundingSet=CAP_NET_ADMIN CAP_DAC_OVERRIDE CAP_DAC_READ_SEARCH CAP_CHOWN CAP_FOWNER CAP_SETUID CAP_SETGID CAP_KILL CAP_AUDIT_WRITE\n'}
     for name, account, role in [('vpn-downloads', ACCOUNT, 'downloads'), ('vpn-management', ADMIN_ACCOUNT, 'management')]:
         units[name + '.service'] = '''[Unit]
