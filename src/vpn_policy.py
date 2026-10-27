@@ -208,6 +208,21 @@ def protected_networks(backend):
     return sorted(networks)
 
 
+def quiesce(manager):
+    """Pause managed tunnel traffic before removing its policy controller."""
+    state=manager.load()
+    networks=[str(ipaddress.IPv4Network(state[key],strict=True)) for key in ('wg_net','ike_net','l2tp_net')]
+    manager.command(['iptables','-w','-N','VPNSTACK-MAINT'],check=False)
+    if manager.command(['iptables','-w','-C','VPNSTACK-MAINT','-j','DROP'],check=False).returncode:
+        manager.command(['iptables','-w','-A','VPNSTACK-MAINT','-j','DROP'])
+    for network in networks:
+        for chain in ('INPUT','FORWARD'):
+            rule=[chain,'-s',network,'-j','VPNSTACK-MAINT']
+            if manager.command(['iptables','-w','-C',*rule],check=False).returncode:
+                manager.command(['iptables','-w','-I',chain,'1',*rule[1:]])
+            manager.command(['iptables','-w','-C',*rule])
+
+
 def apply(backend, skip_unchanged=False, override=None, commit=None, business_snapshot=None, registry_override=None):
     # Separate lock: lifecycle hooks must never contend on the long certificate/job lock.
     with (backend.base / 'policy.lock').open('a') as lock:

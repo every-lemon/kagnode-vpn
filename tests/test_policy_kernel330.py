@@ -85,6 +85,14 @@ with tempfile.TemporaryDirectory() as tmp:
  command(['ip','xfrm','state','delete','src','203.0.113.1','dst','192.168.0.8','proto','esp','spi',hex(258)])
  state(259);p.apply(b)
  assert m.command(deny,check=False).returncode!=0
+ # Removing the controller pauses only managed tunnel pools, ahead of other rules.
+ p.quiesce(m)
+ for network in ('10.66.66.0/24','192.168.43.0/24','192.168.42.0/24'):
+  for chain in ('INPUT','FORWARD'):
+   command(['iptables','-C',chain,'-s',network,'-j','VPNSTACK-MAINT'])
+ command(['iptables','-C','VPNSTACK-MAINT','-j','DROP'])
+ saved=command(['iptables-save','-t','filter']).stdout
+ assert '-A INPUT -s 192.168.0.0/24 -j VPNSTACK-MAINT' not in saved
  print('XFRM, rekey, PPP interface reuse, policy overrides, revocation isolation and DNS exceptions verified')
 '''
         result = subprocess.run(['unshare', '--net', sys.executable, '-c', program, str(ROOT / 'src')], capture_output=True, text=True, timeout=40)

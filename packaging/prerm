@@ -1,8 +1,12 @@
 #!/bin/sh
 set -e
 if [ "$1" = remove ] && [ -d /run/systemd/system ]; then
+  if [ -f /var/lib/vpn/policy-installed ] && [ -f /etc/vpn/state.json ]; then
+    /usr/bin/python3 /usr/lib/vpn/manage.py policy-quiesce
+  fi
   for unit in vpn-management.service vpn-downloads.service vpn-control.service vpn-control.socket vpn-watchdog.timer vpn-maintenance.timer; do
     systemctl stop "$unit" || true
   done
 fi
 # Client keys, MFA and configuration survive removal; no engine is purged.
+# Managed tunnel traffic stays paused until an explicit setup/update verifies policy.

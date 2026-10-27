@@ -31,3 +31,9 @@ already copied onto a recipient's device.
 The builder's synthetic profile checks do not establish successful connection
 from a real iPad or through a particular router. Record those tests before RC or
 stable promotion.
+
+Removing the application package pauses traffic from its managed tunnel pools before
+stopping the policy controller. Trust keys, administrator MFA, engine binaries and
+configuration remain on disk. Reinstall the package, then run the supported setup or
+application updater to verify policy and resume service. LAN/SSH traffic outside the
+VPN pools is unaffected by this removal guard.

@@ -703,6 +703,9 @@ def main():
     elif op == 'policy-apply':
         import vpn_policy
         vpn_policy.apply(clients_backend())
+    elif op == 'policy-quiesce':
+        import vpn_policy
+        vpn_policy.quiesce(manager_self())
     elif op == 'policy-install':
         import vpn_policy
         vpn_policy.install(clients_backend())
