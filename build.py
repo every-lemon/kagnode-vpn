@@ -11,7 +11,7 @@ root = Path(__file__).resolve().parent
 release = (root / 'VERSION').read_text().strip()
 shell = (root / 'src/installer.sh').read_text().replace('@@VERSION@@', release).replace('@@RELEASE_KEY@@', (root/'release-key.pem').read_text().strip())
 manager_source = (root / 'src/manage.py').read_text().rstrip()
-modules = {name: (root / 'src' / (name + '.py')).read_text().replace('@@VERSION@@', release).replace('@@IKE_HELPER@@', base64.b64encode((root/'src/vendor/ikev2.sh').read_bytes()).decode()) for name in ('vpn_clients', 'vpn_web', 'vpn_ui', 'vpn_backend', 'vpn_policy', 'vpn_dependencies', 'vpn_watchdog', 'vpn_admin', 'vpn_harden', 'vpn_portal', 'vpn_auth', 'vpn_version', 'vpn_business', 'vpn_native', 'vpn_maintenance', 'vpn_setup', 'vpn_repair', 'vpn_console', 'vpn_dashboard', 'vpn_access', 'vpn_release', 'vpn_tasks')}
+modules = {name: (root / 'src' / (name + '.py')).read_text().replace('@@VERSION@@', release).replace('@@IKE_HELPER@@', base64.b64encode((root/'src/vendor/ikev2.sh').read_bytes()).decode()) for name in ('vpn_clients', 'vpn_web', 'vpn_ui', 'vpn_backend', 'vpn_policy', 'vpn_dependencies', 'vpn_watchdog', 'vpn_admin', 'vpn_harden', 'vpn_portal', 'vpn_auth', 'vpn_version', 'vpn_business', 'vpn_native', 'vpn_maintenance', 'vpn_setup', 'vpn_repair', 'vpn_console', 'vpn_dashboard', 'vpn_access', 'vpn_release', 'vpn_tasks', 'vpn_diagnostics')}
 module_blob = base64.b64encode(gzip.compress(json.dumps(modules, sort_keys=True).encode(), mtime=0)).decode()
 manager = manager_source.replace('@@MODULE_ARCHIVE@@', module_blob)
 assert shell.count('@@PYTHON_RUNTIME@@') == 1

@@ -66,9 +66,13 @@ def workflow(section,backend,controller,identity,context):
             if kind=='device':form['user']=choose_items('VPN / Device / Owner',[(i,u['name']) for i,u in reg['users'].items() if not u.get('deleted')])
             return form
         options=[('rename','Rename'),('identity-state','Enable, disable or set expiry')]
-        if kind=='device':options += [('assign','Change owner'),('device-group','Change group'),('protocols-add','Add VPN protocols'),('revoke','Revoke a protocol'),('policy-preview','Preview effective access')]
+        if kind=='device':options += [('assign','Change owner'),('device-group','Change group'),('protocols-add','Add VPN protocols'),('connection-check','Queue connection check'),('check-results','View saved connection checks'),('revoke','Revoke a protocol'),('policy-preview','Preview effective access')]
         else: options += [('user-revoke','Revoke every device for this user')]
         action=ui.choose('VPN / '+section.title()+' / '+items[ident]['name'],options)
+        if action=='check-results':
+            from vpn_diagnostics import cached, describe
+            ui.show('VPN / Device / Connection checks',describe(cached(backend.m,ident)))
+            return
         form={'action':action,'id':ident,'kind':kind,'device':ident if kind=='device' else ''}
         if action=='rename':form['name']=name('New name',items[ident]['name'])
         elif action=='assign':form['user']=choose_items('New owner',[(i,u['name']) for i,u in reg['users'].items()])
@@ -116,11 +120,17 @@ def workflow(section,backend,controller,identity,context):
     if section=='admins':
         return {'action':'admin-add','username':ui.ask('VPN / Administrators / Username'),'password':ui.ask('Initial password',secret=True),'role':ui.choose('Role',[(r,r.title()) for r in ('owner','operator','auditor')])}
     if section=='system':
-        action=ui.choose('VPN / System',[('doctor','Diagnose'),('system-repair','Repair known managed faults'),('maintenance-status','Security updates and reboots')])
+        action=ui.choose('VPN / System',[('doctor','View saved connection checks'),('connection-check','Queue system connection check'),('support-report','View redacted support report'),('system-repair','Repair known managed faults'),('maintenance-status','Security updates and reboots')])
+        if action=='support-report':
+            import base64
+            result=controller.handle(dict(context,op='admin-file',form={'kind':'support'}),0)
+            ui.show('VPN / System / Redacted support report',base64.b64decode(result['data']).decode())
+            return
         if action in ('doctor','maintenance-status'):
             from vpn_repair import Doctor
             from vpn_maintenance import Coordinator
-            ui.show('VPN / System',json.dumps(Doctor(backend.m).inspect() if action=='doctor' else Coordinator(backend.m).status(),indent=2));return
+            from vpn_diagnostics import cached,describe
+            ui.show('VPN / System',describe(cached(backend.m)) if action=='doctor' else json.dumps(Coordinator(backend.m).status(),indent=2));return
         return {'action':action}
 
 

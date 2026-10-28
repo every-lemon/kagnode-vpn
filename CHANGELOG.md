@@ -1,5 +1,14 @@
 # Changelog
 
+## 4.0.0-rc.1 — candidate, unpublished
+
+- Queued, bounded connection checks with cached findings and authenticated session evidence.
+- Owner-only, allowlisted support reports without credentials, addresses or raw journals.
+- Device administrative-state explanations, timestamped export tasks and clearer delivery history.
+- Persistent-dashboard guidance in the TUI and explicit RC qualification/publication gates.
+
+Real-device/WAN testing and 24-hour observation must pass before this candidate is released.
+
 ## 4.0.0-beta.2 — 2026-10-27
 
 - Fix the Debian download filename so GitHub preserves the name in the signed manifest.

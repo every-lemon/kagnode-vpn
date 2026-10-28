@@ -21,7 +21,7 @@ import time
 
 # The standalone runtime carries these modules; development imports use sibling sources.
 _MODULE_ARCHIVE = '@@MODULE_ARCHIVE@@'
-_MODULE_NAMES = ('vpn_clients', 'vpn_web', 'vpn_ui', 'vpn_backend', 'vpn_policy', 'vpn_dependencies', 'vpn_watchdog', 'vpn_admin', 'vpn_harden', 'vpn_portal', 'vpn_auth', 'vpn_version', 'vpn_business', 'vpn_native', 'vpn_maintenance', 'vpn_setup', 'vpn_repair', 'vpn_console', 'vpn_dashboard', 'vpn_access', 'vpn_release', 'vpn_tasks')
+_MODULE_NAMES = ('vpn_clients', 'vpn_web', 'vpn_ui', 'vpn_backend', 'vpn_policy', 'vpn_dependencies', 'vpn_watchdog', 'vpn_admin', 'vpn_harden', 'vpn_portal', 'vpn_auth', 'vpn_version', 'vpn_business', 'vpn_native', 'vpn_maintenance', 'vpn_setup', 'vpn_repair', 'vpn_console', 'vpn_dashboard', 'vpn_access', 'vpn_release', 'vpn_tasks', 'vpn_diagnostics')
 def module_source(name):
     if name not in _MODULE_NAMES:
         raise ValueError('Unknown embedded module.')
@@ -625,7 +625,18 @@ def main():
         elif op=='repair':
             import vpn_console
             vpn_console.run(manager_self(),'system')
-        else: print(json.dumps(doctor.inspect(),indent=2))
+        else:
+            import vpn_diagnostics
+            if args == ['--report']:
+                import vpn_console
+                vpn_console.authenticate_owner(manager_self())
+                with lock(): vpn_diagnostics.collect(manager_self())
+                print(vpn_diagnostics.support(manager_self()).decode())
+            elif not args:
+                with lock(): report=vpn_diagnostics.collect(manager_self())
+                print(vpn_diagnostics.describe(report))
+                print('\nManaged-resource inspection:\n'+json.dumps(doctor.inspect(),indent=2))
+            else: raise ValueError('Usage: vpn doctor [--report]')
     elif op.startswith('maintenance-'):
         import vpn_maintenance
         if op=='maintenance-install': vpn_maintenance.install(manager_self())

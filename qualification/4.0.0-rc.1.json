@@ -1,0 +1,13 @@
+{
+  "version": "4.0.0-rc.1",
+  "installer_sha256": "pending-final-candidate",
+  "checks": {
+    "automated": {"passed": false, "evidence": ""},
+    "deployed_reset": {"passed": false, "evidence": ""},
+    "beta2_upgrade": {"passed": false, "evidence": ""},
+    "native_protocols": {"passed": false, "evidence": ""},
+    "apple_import": {"passed": false, "evidence": ""},
+    "external_ikev2": {"passed": false, "evidence": ""}
+  },
+  "observation": {"passed": false, "started_at": "", "finished_at": "", "evidence": ""}
+}

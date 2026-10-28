@@ -88,12 +88,13 @@ def render(data, message='', view='overview', **options):
     return page('VPN management',shell)
 
 def token_history(data, form):
+    from vpn_admin import timestamp, link
     csrf=data['csrf']; rows=''
     for item in data.get('tokens',[]):
-        rows+='<tr><td>'+e(item['device'])+'</td><td>'+e(item['status'])+'</td><td>'+e(item['expires'])+'</td><td>'
+        rows+='<tr><td><a href="'+e(link('device',device=item['device']))+'">'+e(item.get('device_name','Device'))+'</a></td><td><span class="badge">'+e(item['status'])+'</span></td><td>'+e(timestamp(item['expires']))+'</td><td>'
         if item['status']=='available': rows+=form('delivery-revoke',csrf,{'hash':item['hash'],'return_view':'delivery'},label='Revoke')
         rows+=form('delivery-reissue',csrf,{'hash':item['hash'],'return_view':'delivery'},label='Reissue')+'</td></tr>'
-    return '<section><h2>Delivery history</h2><p>Reissuing invalidates the old token. One download total per token.</p><div class="table-wrap"><table><tr><th>Device</th><th>Status</th><th>Expires (UTC epoch)</th><th>Controls</th></tr>'+rows+'</table></div></section>'
+    return '<section><h2>Delivery history</h2><p>Reissuing invalidates the old token. One download total per token. Passwords must be shared separately.</p><div class="table-wrap"><table><tr><th>Device</th><th>Status</th><th>Expires (UTC)</th><th>Controls</th></tr>'+(rows or '<tr><td colspan="4">No delivery history yet.</td></tr>')+'</table></div></section>'
 
 def maintenance(data,form):
     state=data.get('maintenance',{})

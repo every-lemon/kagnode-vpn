@@ -2,7 +2,7 @@
 
 Ubuntu-native administration for WireGuard, IKEv2, L2TP/IPsec, AdGuard Home and VPN profile delivery.
 
-**4.0.0-beta.2 is an evaluation prerelease. RC and stable promotion require further real-device qualification.**
+**This checkout prepares 4.0.0-rc.1; it is not published yet. The published evaluation release is 4.0.0-beta.2.** RC publication requires [qualification and real-device testing](docs/RC_TESTING.md).
 See [qualification status](docs/QUALIFICATION.md) for what has actually been tested.
 
 Target: Ubuntu Server 24.04 LTS amd64, physical server or VM; systemd required.

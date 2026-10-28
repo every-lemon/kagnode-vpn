@@ -56,7 +56,7 @@ class Backend:
         except (OSError, ValueError):
             running = False
         if running:
-            self.repo.job_progress(self, True, 'tool: ' + Path(str(args[0])).name)
+            self.repo.job_progress(self, True, getattr(self,'_phase','') or 'tool: ' + Path(str(args[0])).name)
         try:
             result = subprocess.run(list(map(str, args)), input=data, stdout=subprocess.PIPE,
                                     stderr=subprocess.PIPE, timeout=180, env=env)
@@ -65,7 +65,7 @@ class Backend:
             raise ClientError(Path(str(args[0])).name + ' could not complete. See logs/client-tool-failure-latest.json.') from None
         finally:
             if running:
-                self.repo.job_progress(self, True, 'tool finished')
+                self.repo.job_progress(self, True, getattr(self,'_phase','') or 'tool finished')
         if result.returncode:
             stderr = result.stderr.decode(errors='replace')
             codes = re.findall(r'\b(?:SEC_ERROR|SSL_ERROR)_[A-Z0-9_]+\b', stderr)
@@ -384,6 +384,7 @@ get_export_dir() { export_dir=/var/lib/vpn/; export_to_home_dir=0; }
         raise ClientError('Pending operation needs review; no credential changes were made. Retry the original action or revoke explicitly.')
 
     def export_ike(self, ident, platform, password=None, enabled=True):
+        self._phase='export: generating'
         if platform not in ('apple', 'android', 'windows', 'other'):
             raise ClientError('Choose Apple Device, Android, Windows or Other.')
         reg, device = self.device(ident)
@@ -433,6 +434,7 @@ get_export_dir() { export_dir=/var/lib/vpn/; export_to_home_dir=0; }
                           '-certpbe', 'PBE-SHA1-3DES', '-in', encrypted_pem, '-out', p12,
                           '-passin', 'file:' + str(passfile), '-passout', 'file:' + str(outpass), '-name', nickname])
             protected = p12.read_bytes()
+            self._phase='export: validating'
             self.validate_p12(protected, password, client)
             self.m.atomic(p12, protected)
             produced = [p12.name]

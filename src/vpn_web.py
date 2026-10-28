@@ -147,11 +147,14 @@ CREATE TABLE IF NOT EXISTS flashes(session TEXT PRIMARY KEY,message TEXT NOT NUL
             has_devices=db.execute("SELECT 1 FROM sqlite_master WHERE name='devices'").fetchone()
             result=[]
             for hashed,device,expires,used in rows:
+                device_name='Device'
                 if has_devices:
                     record=db.execute('SELECT data FROM devices WHERE id=?',(device,)).fetchone()
                     if not record or json.loads(record[0]).get('deleted'): continue
+                    if not db.execute("SELECT 1 FROM protocols WHERE device_id=? AND json_extract(data,'$.status')!='revoked' LIMIT 1",(device,)).fetchone():continue
+                    device_name=json.loads(record[0]).get('name','Device')
                 revoked=db.execute('SELECT 1 FROM delivery_revocations WHERE hash=?',(hashed,)).fetchone()
-                result.append({'hash':hashed,'device':device,'expires':expires,'status':'revoked' if revoked else 'used' if used is not None else 'expired' if expires<=self.clock() else 'available'})
+                result.append({'hash':hashed,'device':device,'device_name':device_name,'expires':expires,'status':'revoked' if revoked else 'used' if used is not None else 'expired' if expires<=self.clock() else 'available'})
             return result
 
     def revoke_token(self, hashed):
@@ -393,6 +396,13 @@ class Controller:
             return {'filename': path.name, 'data': base64.b64encode(payload).decode()}
         if op == 'admin-file':
             self.authorize(request, mutate=True)
+            if request.get('form', {}).get('kind') == 'support':
+                actor = self.store.identity(request.get('session', ''))['id']
+                self.store.require_actor(actor, 'support-report')
+                from vpn_diagnostics import support
+                with self.store.connect() as db:
+                    self.store.auth_event(db, actor, 'support-report')
+                return {'filename':'vpn-support.json', 'mime':'application/json', 'data':base64.b64encode(support(self.backend.m)).decode()}
             from vpn_admin import attachment
             if self.backend.repo.pending_delete(request.get('form', {}).get('device', '')):
                 raise WebError('Profile deletion is pending; downloads are unavailable.')
@@ -457,11 +467,15 @@ class Controller:
                 with self.store.connect() as db:
                     extra['administrators']=[dict(id=i,username=n,role=r,enabled=bool(en),enrolled=bool(mfa)) for i,n,r,en,mfa in db.execute('SELECT id,username,role,enabled,enrolled FROM administrators ORDER BY username LIMIT 200')]
             if view=='device' and request.get('device') in registry['devices']:
+                from vpn_diagnostics import cached
+                extra['connection_check']=cached(self.backend.m,request['device'])
                 extra['effective']=business.effective(registry,request['device'],values)
                 extra['admin_approved']=request['device'] in self.state.get('admin_devices',[])
                 extra['device_policy']=values['policies'].get(('device',request['device']),{})
             if view=='users':extra['user_policies']={ident:values['policies'].get(('user',ident),{}) for ident in registry['users']}
             if view=='system':
+                from vpn_diagnostics import cached
+                extra['connection_check']=cached(self.backend.m)
                 from vpn_maintenance import Coordinator
                 extra['maintenance']=Coordinator(self.backend.m).status()
                 extra['access']={k:self.state.get(k,'') for k in ('admin_mode','admin_origin','trusted_proxy','vpd_origin')}
@@ -485,7 +499,9 @@ class Controller:
                 _, item = self.backend.device(form.get('device', ''))
                 if item['protocols'].get('ikev2', {}).get('status') != 'active':
                     raise WebError('Add an active IKEv2 protocol before exporting IKEv2. WireGuard and L2TP profiles can be downloaded from the device page.')
-            if form.get('action') in ('prepare-export', 'protocol-add', 'protocols-add', 'export', 'replace', 'revoke', 'user-revoke', 'rotate-l2tp', 'bundle', 'repair', 'policy', 'batch-run', 'delete-profile'):
+            if form.get('action') in ('prepare-export', 'protocol-add', 'protocols-add', 'export', 'replace', 'revoke', 'user-revoke', 'rotate-l2tp', 'bundle', 'repair', 'policy', 'batch-run', 'delete-profile', 'connection-check'):
+                if form.get('action') == 'connection-check' and form.get('device'):
+                    self.backend.device(form['device'])
                 if form.get('action') == 'delete-profile':
                     if form.get('confirm') != 'DELETE':
                         raise WebError('Type DELETE to revoke and delete this profile.')
@@ -527,6 +543,10 @@ class Controller:
         self.store.require_actor(actor, action)
         with self.store.connect() as db:
             self.store.auth_event(db, actor, 'action:' + action, form.get('device', ''))
+        if action == 'connection-check':
+            from vpn_diagnostics import collect
+            report=collect(self.backend.m,self.backend,form.get('device',''))
+            return {'message':'Connection check recorded. Review the timestamped findings; WAN reachability still requires an external test.', 'reference':report['reference']}
         if action in ('system-repair','access-save','update'):
             import vpn_tasks
             return vpn_tasks.submit(self.backend.m,actor,form)

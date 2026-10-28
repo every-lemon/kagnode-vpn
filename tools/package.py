@@ -26,7 +26,7 @@ Architecture: amd64
 Maintainer: every-lemon <every-lemon@users.noreply.github.com>
 Section: net
 Priority: optional
-Depends: python3 (>= 3.12), python3-venv, ca-certificates, curl, openssl, iproute2, iptables, wireguard-tools, libnss3-tools, ppp, qrencode, util-linux
+Depends: python3 (>= 3.12), python3-venv, ca-certificates, curl, openssl, iproute2, iptables, wireguard-tools, libnss3-tools, ppp, qrencode, util-linux, dnsutils
 Description: Ubuntu-native VPN administration and profile delivery
  WireGuard, IKEv2 and L2TP administration with MFA, access policy and delivery.
  Initial configuration requires the explicit vpn setup command.

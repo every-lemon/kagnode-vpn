@@ -72,8 +72,8 @@ async function poll() {
     for (const job of data.jobs) {
       const row = document.querySelector('[data-job="'+job.id+'"]');
       if (!row) continue;
-      row.querySelector('[data-status]').textContent = job.status;
-      row.querySelector('[data-message]').textContent = (job.status === 'running' && data.progress?.job === job.id ? data.progress.stage : '') || job.result?.message || (job.status === 'queued' ? 'Waiting for the current operation; policy changes have priority.' : 'Working');
+      row.querySelector('[data-status]').textContent = job.status === 'complete' && ['export','prepare-export','bundle'].includes(job.action) ? 'ready' : job.status;
+      row.querySelector('[data-message]').textContent = ((job.status === 'running' && data.progress?.job === job.id ? data.progress.stage : '') || job.result?.message || (job.status === 'queued' ? 'Waiting for the current operation; policy changes have priority.' : 'Working')) + (job.result?.reference ? ' Reference: '+job.result.reference : '');
       row.querySelector('[data-elapsed]').textContent = Math.max(0,Math.floor((['queued','running'].includes(job.status)?Date.now()/1000:job.updated)-job.created))+'s elapsed';
     }
     for (const batch of data.batches || []) for (const item of batch.items) {
@@ -157,6 +157,29 @@ def protocols(record):
     return ' '.join('<span class="badge">' + e(name.upper()) + ' · ' + e(value.get('status', 'unknown')) + '</span>' for name, value in record.get('protocols', {}).items() if value.get('status') != 'revoked') or '<span class="muted">No protocols configured</span>'
 
 
+def timestamp(value):
+    try:
+        return datetime.datetime.fromtimestamp(float(value), datetime.timezone.utc).strftime('%Y-%m-%d %H:%M:%S UTC')
+    except (ValueError, TypeError, OverflowError, OSError):
+        return 'Not recorded'
+
+
+def diagnostic_panel(data, device=''):
+    record=data.get('connection_check')
+    fields={'device':device,'return_device':device} if device else {'return_view':'system'}
+    body='<section><h3>Connection checks</h3><p>Checks are read-only and run through the job queue. Findings describe traffic through this VPN.</p>'
+    body+=form('connection-check',data['csrf'],fields,label='Run connection check')
+    if record:
+        body+='<p>Checked '+e(timestamp(record['sampled_at']))+' · Reference <code>'+e(record['reference'])+'</code></p><p class="muted">This is a saved snapshot. Connect the device and run again for new evidence.</p><ul>'
+        for check in record['checks']:
+            body+='<li><span class="badge '+('failed' if check['status']=='failure' else '')+'">'+e(check['status'].upper())+'</span> '+e(check['message'])+'<small>'+e(check['next_step'])+'</small></li>'
+        body+='</ul>'
+    else: body+='<p>Observed connection: unknown. No check has been recorded.</p>'
+    if not device and data.get('identity',{}).get('role')=='owner':
+        body+=form('support-report',data['csrf'],{'kind':'support'},label='Download redacted support report',target='/manage/file')
+    return body+'</section>'
+
+
 def job_list(jobs, registry, csrf, device=None):
     rows = ''
     for job in jobs:
@@ -166,10 +189,12 @@ def job_list(jobs, registry, csrf, device=None):
         name = registry['devices'].get(ident, {}).get('name', 'General task')
         result = job.get('result') or {}
         message = result.get('message', 'Waiting for the backend.' if job['status'] == 'queued' else 'Working…' if job['status'] == 'running' else '')
+        if result.get('reference'): message+=' Reference: '+result['reference']
         retry = ''
-        if job['status'] in ('failed', 'interrupted') and job['action'] in ('protocols-add', 'export', 'bundle', 'prepare-export', 'policy', 'repair', 'batch-run', 'delete-profile'):
+        if job['status'] in ('failed', 'interrupted') and job['action'] in ('protocols-add', 'export', 'bundle', 'prepare-export', 'policy', 'repair', 'batch-run', 'delete-profile', 'connection-check'):
             retry = form('job-retry', csrf, {'id': job['id'], 'return_device': ident}, label='Retry task')
-        rows += '<tr data-job="' + e(job['id']) + '"><td>' + (('<a href="' + e(link('device', device=ident)) + '">' + e(name) + '</a>') if ident else e(name)) + '<br><small>' + e(job['action'].replace('-', ' ')) + '</small><br><small data-elapsed></small></td><td data-status>' + e(job['status']) + '</td><td><span data-message>' + e(message) + '</span>' + retry + '<details><summary>Task reference</summary><code>' + e(job['id']) + '</code></details></td></tr>'
+        state='ready' if job['status']=='complete' and job['action'] in ('export','prepare-export','bundle') else job['status']
+        rows += '<tr data-job="' + e(job['id']) + '"><td>' + (('<a href="' + e(link('device', device=ident)) + '">' + e(name) + '</a>') if ident else e(name)) + '<br><small>' + e(job['action'].replace('-', ' ')) + '</small><small>Requested '+e(timestamp(job['created']))+'<br>Updated '+e(timestamp(job['updated']))+'</small><small data-elapsed></small></td><td data-status>' + e(state) + '</td><td><span data-message>' + e(message) + '</span>' + retry + '<details><summary>Task reference</summary><code>' + e(job['id']) + '</code></details></td></tr>'
     return '<div class="table-wrap"><table><thead><tr><th>Device / task</th><th>Status</th><th>Result</th></tr></thead><tbody>' + (rows or '<tr><td colspan="3">No tasks yet.</td></tr>') + '</tbody></table></div>'
 
 
@@ -225,12 +250,13 @@ def render(data, message='', view='overview', device='', query='', owner='', pag
     elif view == 'jobs':
         body += '<div class="toolbar">' + form('clear-history',csrf,{'return_view':'jobs'},label='Clear completed history') + '</div><section>' + job_list(data.get('jobs',[]),reg,csrf) + '</section>' + pagination('jobs',current,paging.get('total',len(data.get('jobs',[]))),size=25)
     elif view == 'system':
+        body += diagnostic_panel(data)
         body += '<section><h2>Services and memory</h2><p data-services>Loading…</p><p data-memory>Loading…</p><small>Last health refresh <span data-updated>pending</span></small></section>'
         security = data.get('hardening') or {}
         body += '<section><h2>Appliance hardening</h2><p>SSH setup choice: ' + e(security.get('ssh','unknown')) + ' · Automatic package purging: disabled · Hardening: ' + e(security.get('status','not recorded')) + '</p><details><summary>Hardening details</summary><pre>' + e(json.dumps(security,indent=2)) + '</pre></details></section>'
         if data.get('diagnostic'):
             body += '<section><h2>Latest export diagnostic</h2><pre>' + e(json.dumps(data['diagnostic'],indent=2)) + '</pre></section>'
-        body += '<p class="muted">Service readings are cached. Expensive diagnostics run only when explicitly requested from the local console.</p>'
+        body += '<p class="muted">Service readings are cached. Connection checks run only when requested; refresh after the queued check completes.</p>'
     else:
         if tab not in ('profiles','access','settings','activity'):
             tab = 'profiles'
@@ -271,7 +297,9 @@ def device_content(data, device, tab):
         return '<section><h2>Profile removed</h2><p>This device has no remaining active profiles. Any incomplete cleanup can be retried below.</p><a href="/manage/devices">Back to devices</a></section>' + job_list(data.get('jobs', []), reg, csrf, device)
     def action(name, extra='', label=None, fields=None, target='/manage/action'):
         return form(name, csrf, {'device': device, 'return_device': device, 'return_tab': tab, **(fields or {})}, extra, label, target)
-    body += '<h2>' + e(row['name']) + '</h2><p>Owner: ' + e(reg['users'].get(row['user'], {}).get('name', 'Unknown')) + '</p><p>' + protocols(row) + '</p>'
+    from vpn_business import expired
+    enabled=not (expired(row) or expired(reg['users'].get(row['user'],{})))
+    body += '<h2>' + e(row['name']) + '</h2><p>Owner: ' + e(reg['users'].get(row['user'], {}).get('name', 'Unknown')) + '</p><p>Administrative state: <strong>'+('Enabled' if enabled else 'Disabled, expired or revoked')+'</strong> · Observed connection: see timestamped connection checks.</p><p>' + protocols(row) + '</p>'
     options = ''.join('<option value="' + e(k) + '"' + (' selected' if k == row['user'] else '') + '>' + e(v['name']) + '</option>' for k, v in reg['users'].items())
     effective = row.get('lan_policy', 'inherit')
     if effective == 'inherit':
@@ -374,6 +402,9 @@ def focused_device(data, device, tab):
                 if tab=='settings':body+=owner_search('device',device,data.get('pagination',{}).get('owner_query',''))
         elif (tab=='activity' and title=='Device tasks') or (tab=='settings' and title in ('Recovery and revoke','Delete client profiles')) or (tab=='profiles' and title not in ('Device settings','Device tasks','Recovery and revoke','Delete client profiles')):
             body+=panel
+    if tab=='profiles':
+        body+=diagnostic_panel(data,device)
+        body+='<section><h3>Recent profile tasks</h3>'+job_list(data.get('jobs',[])[:5],data['registry'],data['csrf'],device)+'</section>'
     return body
 
 

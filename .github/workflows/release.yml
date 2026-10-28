@@ -30,6 +30,7 @@ jobs:
           SIGNING_KEY: ${{ secrets.VPN_RELEASE_KEY }}
         run: |
           umask 077
+          python3 tools/qualify_release.py
           test -n "$SIGNING_KEY"
           key=$(mktemp)
           trap 'rm -f "$key"' EXIT

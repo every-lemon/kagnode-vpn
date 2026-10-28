@@ -1,4 +1,9 @@
-# VPN 4.0 beta qualification
+# VPN 4.0 qualification
+
+RC.1 is an unpublished candidate. Its current gates are tracked in
+`qualification/4.0.0-rc.1.json`; follow [RC testing](RC_TESTING.md).
+Beta.2's final tagged workflows passed **258 tests** and independent downloaded
+asset signature/filename/checksum verification. Evidence below describes its backend.
 
 This file records beta evidence. RC/stable promotion still requires the real-device
 and external-network checks described below.

@@ -305,7 +305,7 @@ CREATE TABLE IF NOT EXISTS policy_sessions(key TEXT PRIMARY KEY,data TEXT NOT NU
             if not row or row[1] not in ('failed', 'interrupted'):
                 raise ValueError('Only failed/interrupted jobs can be retried.')
             form = json.loads(row[0])
-            if form.get('action') not in ('protocols-add', 'export', 'prepare-export', 'bundle', 'policy', 'repair', 'batch-run', 'delete-profile'):
+            if form.get('action') not in ('protocols-add', 'export', 'prepare-export', 'bundle', 'policy', 'repair', 'batch-run', 'delete-profile', 'connection-check'):
                 raise ValueError('Review the device and request this operation explicitly; destructive jobs are not automatically replayed.')
             if form.get('action') == 'batch-run':
                 batch = db.execute('SELECT data FROM batches WHERE id=?', (form['batch'],)).fetchone()
@@ -392,12 +392,13 @@ CREATE TABLE IF NOT EXISTS policy_sessions(key TEXT PRIMARY KEY,data TEXT NOT NU
                 except Exception as exc:
                     self.audit('job-failure', row[0], type(exc).__name__)
                     detail = str(exc) if isinstance(exc, (ValueError, RuntimeError, OSError)) else type(exc).__name__
-                    result = {'message': 'Operation failed: ' + detail + '. Inspect device recovery before retrying.'}
+                    result = {'message': 'Operation failed: ' + detail + '. Inspect device recovery before retrying.', 'reference':row[0]}
                     status = 'failed'
                 secret = json.loads(row[1]).get('_secret', '')
                 if secret:
                     (self.base / 'job-secrets' / secret).unlink(missing_ok=True)
                 backend._job_id = ''
+                backend._phase = ''
                 self.job_progress(backend, False, status)
                 from vpn_harden import release_memory
                 release_memory()

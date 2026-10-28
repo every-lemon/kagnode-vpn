@@ -334,34 +334,9 @@ def watchdog_menu(manager):
 
 
 def web_menu(manager, backend):
-    import vpn_web
-    choice = choose('Web access', [('start', 'Open LAN web management for 30 minutes'),
-                    ('password', 'Set / reset management administrator password'),
-                    ('logs', 'View latest web startup diagnostics'),
-                    ('close', 'Close management; keep downloads and certificates online'),
-                    ('stop', 'Disable public downloads and certificate service'), ('back', 'Back')])
-    if choice == 'password':
-        management_password(manager, backend)
-    elif choice == 'logs':
-        path = backend.base / 'logs/web-failure-latest.txt'
-        show('Web diagnostics', path.read_text() if path.exists() else 'No web failure diagnostics yet.')
-    elif choice == 'start':
-        if not vpn_web.Store(backend.repo.path).has_password():
-            management_password(manager, backend)
-        accounts = [(p.pw_name, p.pw_name) for p in pwd.getpwall() if 1000 <= p.pw_uid < 65534 and p.pw_dir.startswith('/home/')]
-        username = choose('Local user for optional private export copies', accounts + [('', 'No download user')])
-        with manager.lock():
-            if not (backend.base / 'web-enabled').exists():
-                vpn_web.enable(backend, manager.module_source('vpn_web'), username, open_manager=False)
-            else:
-                manager.atomic(backend.base / 'web/config.json', json.dumps({'download_user': username}))
-            url = vpn_web.open_management(backend)
-        show('Web manager ready', url + '\nSign in with your management password. LAN access only.\nManagement closes in 30 minutes; public certificate/download service stays running.\nManagement uses LAN port 9001. Forward only TCP 9000 for public links; never forward 9001. HTTP is unencrypted: use management only on a trusted LAN. Public private-key bundles are password-encrypted; share passwords separately.')
-    elif choice == 'close':
-        vpn_web.expire(backend)
-        show('Management closed', 'Port 9001 is stopped. Downloads and certificates on port 9000 stay online.')
-    elif choice == 'stop' and confirm('Stop port 9000 certificates and downloads?'):
-        vpn_web.stop_downloads(backend)
+    import vpn_console
+    show('VPN dashboard', 'Management stays online on LAN port 9001. Sign in with your administrator username, password and MFA. Sessions expire after 30 idle minutes or 8 hours. Profile delivery uses port 9000. Public administration requires configured HTTPS.')
+    vpn_console.run(manager, 'system')
 
 
 def device_menu(manager, backend, ident):
