@@ -57,7 +57,9 @@ After functional checks pass, observe the final candidate for 24 completed hours
 Transfer the maintained `tools/observe_rc.py` helper privately, then run it under
 a dedicated transient systemd service (64 MiB memory cap) with `--hours 24 --output
 /var/log/vpn/rc-observation.jsonl`. It reads fixed service properties and memory
-once per minute, makes no repairs, and refuses to overwrite earlier evidence.
+once per minute, adds aggregate queue/watchdog counters, makes no repairs, and
+refuses to overwrite earlier evidence. It never exports job forms/results or raw
+journals. Review both counters and the private audit/journal history.
 Record service failures, watchdog/reboot actions, queue failures, memory readings,
 routine maintenance and reconnect outcomes. Review root-only journals locally.
 No unexplained crashes, reboot loops or sustained memory growth may remain.

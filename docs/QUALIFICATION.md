@@ -5,6 +5,28 @@ RC.1 is an unpublished candidate. Its current gates are tracked in
 Beta.2's final tagged workflows passed **258 tests** and independent downloaded
 asset signature/filename/checksum verification. Evidence below describes its backend.
 
+RC candidate evidence recorded on 28 October 2026:
+
+- The final runtime passed 279 Ubuntu 24.04 CI tests. Three additional tests cover
+  observation counters and ensure they never export private job contents.
+- A retained 3.8 runtime was deployed with real native engines in an isolated VM.
+  Fixture-only NSS aliases accommodated Ubuntu's native database location. A deliberate
+  interruption after verified backup, clean shutdown/reboot and resumed reset passed:
+  legacy services stayed retired, while networking and engine binaries were preserved.
+- Fresh setup produced a different CA, an empty client/token database, the built-in
+  ungrouped group and a newly MFA-enrolled owner. Subsequent native WireGuard, IKEv2
+  and L2TP creation and Apple/Android/PKCS12 validation passed.
+- The exact RC package passed installation, reinstallation, removal and restoration,
+  preserving client/trust and administrator password/MFA hashes. The restored broker,
+  authenticated HTTP dashboard, native single-use VPD and Owner-only report passed.
+- Browser checks passed eleven routes at three widths, with MFA, no page overflow
+  and changed form/checkbox selections retained across real polling intervals.
+  Earlier local headless navigation/login waits timed out; the final instrumented
+  direct-connection run passed. Real-device login remains part of the manual gate.
+
+This evidence does not replace real Apple import, external IKEv2 connectivity or
+24 completed observation hours. RC publication remains blocked by their record.
+
 This file records beta evidence. RC/stable promotion still requires the real-device
 and external-network checks described below.
 

@@ -6,6 +6,7 @@
 - Owner-only, allowlisted support reports without credentials, addresses or raw journals.
 - Device administrative-state explanations, timestamped export tasks and clearer delivery history.
 - Persistent-dashboard guidance in the TUI and explicit RC qualification/publication gates.
+- Retire generated SysV services explicitly and serialize reset with legacy CLI/watchdog jobs.
 
 Real-device/WAN testing and 24-hour observation must pass before this candidate is released.
 
