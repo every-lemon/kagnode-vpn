@@ -43,7 +43,7 @@ jobs:
         run: |
           flags=()
           if [[ "$GITHUB_REF_NAME" == *-* ]]; then flags+=(--prerelease); fi
-          gh release create "$GITHUB_REF_NAME" dist/*.deb dist/setup.sh dist/update.sh dist/SHA256SUMS dist/manifest.json dist/manifest.sig --draft --verify-tag --title "VPN ${GITHUB_REF_NAME#v}" --notes-file CHANGELOG.md "${flags[@]}"
+          gh release create "$GITHUB_REF_NAME" dist/*.deb dist/setup.sh dist/update.sh dist/SHA256SUMS dist/manifest.json dist/manifest.sig --draft --verify-tag --title "VPN ${GITHUB_REF_NAME#v}" --notes-file RELEASE_NOTES.md "${flags[@]}"
           gh release download "$GITHUB_REF_NAME" --dir downloaded
           python3 tools/verify_release.py downloaded "${GITHUB_REF_NAME#v}"
           gh release edit "$GITHUB_REF_NAME" --draft=false

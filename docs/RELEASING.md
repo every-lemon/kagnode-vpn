@@ -8,7 +8,8 @@ The download filename retains canonical SemVer, for example
 GitHub normalizes special characters in uploaded names, so do not put `~` in
 asset filenames. The workflow downloads and verifies a draft before publishing.
 
-1. Update VERSION/changelog; complete and record the applicable qualification gates.
+1. Update VERSION/changelog and the short RELEASE_NOTES.md (one or two sentences
+   plus a link to the tagged changelog); complete and record the applicable qualification gates.
 2. Run CI/tests, syntax checks, package tests and secret scanning on the exact commit.
 3. Build with `VPN_RELEASE_KEY=/private/path/key.pem python3 tools/package.py`.
    Use an Ed25519 key. Keep the private key out of Git; distribute only `release-key.pem`.
