@@ -3,20 +3,20 @@
   "installer_sha256": "bcf29e9c068f679aa6c86dea31fd4efa6f738000a9aeee405633d358d6cfe13e",
   "checks": {
     "automated": {
-      "passed": false,
-      "evidence": "Prior 279-test CI run passed; rerun pending for presentation-only suppression of repair guidance on passing checks."
+      "passed": true,
+      "evidence": "279 tests passed on Ubuntu 24.04 in GitHub CI run 40696402548 for the final runtime, including kernel, NSS, sandbox and publication-gate checks."
     },
     "deployed_reset": {
-      "passed": false,
-      "evidence": ""
+      "passed": true,
+      "evidence": "Disposable Ubuntu 24.04 VM: retained 3.8 runtime/native engines, verified backup interruption and clean reboot without legacy reactivation, resumed reset, new CA, empty clients/tokens, fresh MFA owner; networking and engine binaries preserved. Native-NSS aliases were used only in the legacy fixture."
     },
     "beta2_upgrade": {
-      "passed": false,
-      "evidence": ""
+      "passed": true,
+      "evidence": "Published beta.2 package upgraded using the RC updater in an isolated VM; VPN trust/client files and administrator password/MFA hashes preserved; installed broker export, HTTP dashboard, native VPD and diagnostics/report checks passed. Subsequent changes cover reset retirement and presentation/cache handling."
     },
     "native_protocols": {
-      "passed": false,
-      "evidence": ""
+      "passed": true,
+      "evidence": "Fresh-reset Ubuntu VM created WireGuard, IKEv2 and L2TP clients; Apple/Android/PKCS12 exports validated cryptographically and VPD accepted one native-profile claim only."
     },
     "apple_import": {
       "passed": false,
