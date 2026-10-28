@@ -1,10 +1,10 @@
 {
   "version": "4.0.0-rc.1",
-  "installer_sha256": "669cafbd58531d8c3f20be6bdbfef6bd9ec6fa3c17de925bdf9cc6ec637e20cc",
+  "installer_sha256": "0e635eb63e7e8b68a8072a0fd167bccf3f6783c9e51f5b39a28b00623dba5929",
   "checks": {
     "automated": {
       "passed": false,
-      "evidence": "Prior 277-test run passed; rerun required for explicit generated-SysV engine retirement."
+      "evidence": "Prior 278-test CI run passed; final legacy-operation lock regression is queued for CI."
     },
     "deployed_reset": {
       "passed": false,

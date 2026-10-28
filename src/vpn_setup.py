@@ -1,5 +1,7 @@
 """Explicit fresh-start orchestration. Never invoked by package maintainer scripts."""
 import hashlib
+import contextlib
+import fcntl
 import json
 import os
 from pathlib import Path
@@ -22,7 +24,17 @@ def fresh_start(manager, confirmation, root=Path('/')):
     from vpn_maintenance import Coordinator
     manager.BASE.mkdir(mode=0o700,parents=True,exist_ok=True)
     with Coordinator(manager).exclusive():
-        return _fresh_start(manager,root)
+        # Older CLI/watchdog jobs use their own lock directory. Hold both domains
+        # through retirement and backup so a legacy helper cannot race trust removal.
+        legacy=Path(root)/'root/vpn-stack'
+        with contextlib.ExitStack() as held:
+            if (legacy/'state.json').is_file():
+                for name in ('maintenance.lock','operation.lock'):
+                    descriptor=os.open(legacy/name,os.O_RDWR|os.O_CREAT|os.O_NOFOLLOW,0o600)
+                    stream=held.enter_context(os.fdopen(descriptor,'a'))
+                    try:fcntl.flock(stream,fcntl.LOCK_EX|fcntl.LOCK_NB)
+                    except BlockingIOError:raise RuntimeError('A legacy VPN maintenance or client job is running; retry later.') from None
+            return _fresh_start(manager,root)
 
 
 def _fresh_start(manager,root):

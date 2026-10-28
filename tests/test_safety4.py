@@ -1,5 +1,6 @@
 """Recovery and maintenance safety; all OS writes are confined to fixture roots."""
 import concurrent.futures
+import fcntl
 import json
 from pathlib import Path
 import subprocess
@@ -76,6 +77,14 @@ class SafetyTests(unittest.TestCase):
             with self.assertRaisesRegex(RuntimeError,'Maintenance'):
                 vpn_setup.fresh_start(self.manager,'RESET VPN AND ADGUARD',self.root)
         self.assertFalse(self.commands)
+    def test_reset_serializes_with_legacy_cli_jobs_before_stopping_services(self):
+        self.legacy()
+        with (self.root/'root/vpn-stack/operation.lock').open('a') as active:
+            fcntl.flock(active,fcntl.LOCK_EX|fcntl.LOCK_NB)
+            with self.assertRaisesRegex(RuntimeError,'legacy VPN'):
+                vpn_setup.fresh_start(self.manager,'RESET VPN AND ADGUARD',self.root)
+        self.assertFalse(self.commands)
+        self.assertTrue((self.root/'etc/ipsec.d/key.db').exists())
     def test_interrupted_reset_resumes_without_reactivating_old_keys(self):
         self.legacy();original=vpn_setup.shutil.rmtree
         def fail(path,*args,**kw):
