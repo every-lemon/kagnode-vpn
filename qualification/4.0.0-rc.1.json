@@ -1,10 +1,10 @@
 {
   "version": "4.0.0-rc.1",
-  "installer_sha256": "0e635eb63e7e8b68a8072a0fd167bccf3f6783c9e51f5b39a28b00623dba5929",
+  "installer_sha256": "bcf29e9c068f679aa6c86dea31fd4efa6f738000a9aeee405633d358d6cfe13e",
   "checks": {
     "automated": {
       "passed": false,
-      "evidence": "Prior 278-test CI run passed; final legacy-operation lock regression is queued for CI."
+      "evidence": "Prior 279-test CI run passed; rerun pending for presentation-only suppression of repair guidance on passing checks."
     },
     "deployed_reset": {
       "passed": false,

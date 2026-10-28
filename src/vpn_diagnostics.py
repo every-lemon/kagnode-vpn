@@ -221,4 +221,4 @@ def describe(report):
     if not report: return 'No connection check recorded. Run a check to collect bounded diagnostics.'
     stamp = datetime.datetime.fromtimestamp(report['sampled_at'], datetime.timezone.utc).strftime('%Y-%m-%d %H:%M:%S UTC')
     return 'Checked ' + stamp + '\nReference: ' + report['reference'] + '\n\n' + '\n\n'.join(
-        row['status'].upper() + ' ' + row['message'] + '\nNext: ' + row['next_step'] for row in report['checks'])
+        row['status'].upper() + ' ' + row['message'] + ('\nNext: ' + row['next_step'] if row['status'] != 'pass' else '') for row in report['checks'])

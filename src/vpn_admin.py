@@ -172,7 +172,7 @@ def diagnostic_panel(data, device=''):
     if record:
         body+='<p>Checked '+e(timestamp(record['sampled_at']))+' · Reference <code>'+e(record['reference'])+'</code></p><p class="muted">This is a saved snapshot. Connect the device and run again for new evidence.</p><ul>'
         for check in record['checks']:
-            body+='<li><span class="badge '+('failed' if check['status']=='failure' else '')+'">'+e(check['status'].upper())+'</span> '+e(check['message'])+'<small>'+e(check['next_step'])+'</small></li>'
+            body+='<li><span class="badge '+('failed' if check['status']=='failure' else '')+'">'+e(check['status'].upper())+'</span> '+e(check['message'])+('<small>'+e(check['next_step'])+'</small>' if check['status']!='pass' else '')+'</li>'
         body+='</ul>'
     else: body+='<p>Observed connection: unknown. No check has been recorded.</p>'
     if not device and data.get('identity',{}).get('role')=='owner':

@@ -91,6 +91,8 @@ class DiagnosticTests(unittest.TestCase):
             self.assertIn(b'Connection checks',body)
             self.assertIn(b'UNKNOWN',body)
             self.assertIn(b'Recent profile tasks',body)
+            self.assertNotIn(b'run managed repair for a verified service fault',body)
+            self.assertIn(b'Connect this device, then run another check',body)
         self.assertFalse(b'animation:' in body)
 
     def test_recent_wireguard_handshake_must_match_exact_managed_peer(self):
