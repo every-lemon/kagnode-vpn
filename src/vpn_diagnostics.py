@@ -2,6 +2,7 @@
 import datetime
 import ipaddress
 import json
+import math
 import os
 from pathlib import Path
 import re
@@ -49,7 +50,7 @@ def probe(args, timeout):
 def path_for(manager, device=''):
     if device and not re.fullmatch(r'[A-Za-z0-9_-]{1,80}', device):
         raise ValueError('Invalid diagnostic device.')
-    return manager.BASE / 'diagnostics' / ((device or 'system') + '.json')
+    return manager.BASE / 'diagnostics' / (('device-' + device if device else 'system') + '.json')
 
 
 def cached(manager, device=''):
@@ -58,7 +59,16 @@ def cached(manager, device=''):
         if path.is_symlink() or path.stat().st_size > LIMIT:
             return None
         value = json.loads(path.read_text())
-        return value if value.get('schema') == 1 else None
+        if not isinstance(value,dict) or value.get('schema') != 1: return None
+        if not isinstance(value.get('sampled_at'),(int,float)) or not math.isfinite(value['sampled_at']):return None
+        if not isinstance(value.get('reference'),str) or not re.fullmatch(r'[a-f0-9]{16}',value['reference']):return None
+        checks=value.get('checks')
+        if not isinstance(checks,list) or len(checks)>32:return None
+        for row in checks:
+            if not isinstance(row,dict) or row.get('status') not in ('pass','warning','failure','unknown'):return None
+            if any(not isinstance(row.get(field),str) or len(row[field])>1000 for field in ('id','message','next_step')):return None
+        if not isinstance(value.get('engines',{}),dict):return None
+        return value
     except (OSError, ValueError):
         return None
 

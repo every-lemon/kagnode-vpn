@@ -45,6 +45,12 @@ class DiagnosticTests(unittest.TestCase):
         self.assertTrue(report['checks'][0]['next_step'])
         self.assertNotIn('secret-raw-tool-output',json.dumps(report))
 
+    def test_corrupt_cache_does_not_break_management_views(self):
+        m.atomic(diagnostics.path_for(m,self.ident),json.dumps({'schema':1,'checks':'corrupt'}))
+        self.assertIsNone(diagnostics.cached(m,self.ident))
+        self.assertEqual(self.request('/manage/device?device='+self.ident)[0],'200 OK')
+        self.assertNotEqual(diagnostics.path_for(m,'system'),diagnostics.path_for(m))
+
     def test_support_export_rebuilds_allowlist_instead_of_copying_cached_strings(self):
         diagnostics.collect(m,runner=self.runner)
         path=diagnostics.path_for(m)
