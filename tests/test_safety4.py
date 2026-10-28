@@ -37,6 +37,8 @@ class SafetyTests(unittest.TestCase):
         self.assertEqual((Path(result['archive'])/'etc/ipsec.d/key.db').read_bytes(),b'old trust fixture')
         self.assertEqual((self.root/'etc/netplan/50-cloud-init.yaml').read_text(),'network fixture')
         self.assertFalse(any('start' in call or 'restart' in call for call in self.commands))
+        retired={call[-1] for call in self.commands if call[:3]==['systemctl','disable','--now']}
+        self.assertTrue({'vpn-stack-firewall.service','vpn-stack-cleanup.service','vpn-stack-watchdog.service','vpn-stack-management-expire.service'}<=retired)
         self.assertEqual(vpn_setup.fresh_start(self.manager,'RESET VPN AND ADGUARD',self.root),result)
     def test_reset_hashes_backup_files_without_unbounded_reads(self):
         self.legacy()
