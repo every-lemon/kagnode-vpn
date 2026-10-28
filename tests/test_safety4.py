@@ -58,6 +58,18 @@ class SafetyTests(unittest.TestCase):
             vpn_setup.fresh_start(self.manager,'RESET VPN AND ADGUARD',self.root)
         self.assertTrue((self.root/'etc/ipsec.d/key.db').exists())
         self.assertEqual(json.loads((self.base/'reset-progress.json').read_text())['stage'],'inventory')
+    def test_generated_sysv_engine_is_explicitly_stopped_before_reset(self):
+        self.legacy();stopped=set()
+        def command(args,**kw):
+            self.commands.append(args)
+            if args[:2]==['systemctl','stop']:stopped.add(args[2])
+            active='active\n' if args[1:3]==['show','xl2tpd'] and 'xl2tpd' not in stopped else ''
+            return subprocess.CompletedProcess(args,0,active,'')
+        self.manager.command=command
+        result=vpn_setup.fresh_start(self.manager,'RESET VPN AND ADGUARD',self.root)
+        self.assertEqual(result['stage'],'complete')
+        self.assertIn('xl2tpd',stopped)
+        self.assertLess(self.commands.index(['systemctl','stop','vpn-stack-watchdog.timer']),self.commands.index(['systemctl','stop','vpn-stack-control']))
     def test_reset_and_other_maintenance_are_serialized(self):
         self.legacy()
         with Coordinator(self.manager).exclusive():

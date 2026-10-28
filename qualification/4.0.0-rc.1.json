@@ -1,13 +1,36 @@
 {
   "version": "4.0.0-rc.1",
-  "installer_sha256": "pending-final-candidate",
+  "installer_sha256": "669cafbd58531d8c3f20be6bdbfef6bd9ec6fa3c17de925bdf9cc6ec637e20cc",
   "checks": {
-    "automated": {"passed": false, "evidence": ""},
-    "deployed_reset": {"passed": false, "evidence": ""},
-    "beta2_upgrade": {"passed": false, "evidence": ""},
-    "native_protocols": {"passed": false, "evidence": ""},
-    "apple_import": {"passed": false, "evidence": ""},
-    "external_ikev2": {"passed": false, "evidence": ""}
+    "automated": {
+      "passed": false,
+      "evidence": "Prior 277-test run passed; rerun required for explicit generated-SysV engine retirement."
+    },
+    "deployed_reset": {
+      "passed": false,
+      "evidence": ""
+    },
+    "beta2_upgrade": {
+      "passed": false,
+      "evidence": ""
+    },
+    "native_protocols": {
+      "passed": false,
+      "evidence": ""
+    },
+    "apple_import": {
+      "passed": false,
+      "evidence": ""
+    },
+    "external_ikev2": {
+      "passed": false,
+      "evidence": ""
+    }
   },
-  "observation": {"passed": false, "started_at": "", "finished_at": "", "evidence": ""}
+  "observation": {
+    "passed": false,
+    "started_at": "",
+    "finished_at": "",
+    "evidence": ""
+  }
 }

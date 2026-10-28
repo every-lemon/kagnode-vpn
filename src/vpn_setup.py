@@ -58,11 +58,14 @@ def _fresh_start(manager,root):
         manager.atomic(marker,json.dumps(state))
     archive=Path(state['archive'])
     # Stop before backing up SQLite/NSS. Disable VPN engines until deliberate setup resumes.
-    units=['vpn-stack-control.socket','vpn-stack-control','vpn-stack-downloads','vpn-stack-management',
-           'vpn-stack-watchdog.timer','vpn-stack-watchdog.service','vpn-stack-cleanup.timer','vpn-stack-cleanup.service',
-           'vpn-stack-management-expire.timer','vpn-stack-management-expire.service','vpn-stack-firewall.service',
+    units=['vpn-stack-watchdog.timer','vpn-stack-cleanup.timer','vpn-stack-management-expire.timer',
+           'vpn-stack-watchdog.service','vpn-stack-cleanup.service','vpn-stack-management-expire.service',
+           'vpn-stack-control.socket','vpn-stack-control','vpn-stack-downloads','vpn-stack-management','vpn-stack-firewall.service',
            'AdGuardHome','ipsec','xl2tpd','wg-quick@wg0']
     for unit in units:
+        # Ubuntu's generated SysV units may disable successfully without honoring --now.
+        # Stop explicitly, then verify every unit before touching trust or private data.
+        manager.command(['systemctl','stop',unit],check=False)
         manager.command(['systemctl','disable','--now',unit],check=False)
     for unit in units:
         active=manager.command(['systemctl','show',unit,'-p','ActiveState','--value'],check=False).stdout.strip()
