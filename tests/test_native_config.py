@@ -1,5 +1,6 @@
 """Validate generated connections with the installed Libreswan parser, without starting VPNs."""
 from pathlib import Path
+import importlib.util
 import shutil
 import subprocess
 import sys
@@ -8,7 +9,12 @@ import types
 import unittest
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / 'src'))
-import vpn_native
+# Other tests register the standalone loader. Load the development source explicitly
+# so its unembedded vendor helper resolves from a real __file__, independent of order.
+_spec = importlib.util.spec_from_file_location(
+    'vpn_native_parser_fixture', Path(__file__).resolve().parents[1] / 'src/vpn_native.py')
+vpn_native = importlib.util.module_from_spec(_spec)
+_spec.loader.exec_module(vpn_native)
 
 
 @unittest.skipUnless(shutil.which('ipsec'), 'Libreswan parser is required (installed by CI)')
