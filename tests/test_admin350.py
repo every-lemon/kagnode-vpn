@@ -105,6 +105,8 @@ class AdminTests(unittest.TestCase):
         status, headers, body = self.request('/manage/file', 'POST', {'device': self.ident, 'kind': 'email'})
         self.assertEqual(status, '200 OK')
         self.assertIn('.html', headers['Content-Disposition'])
+        self.assertIn(b'KagNode VPN', body)
+        self.assertIn(b'data:image/svg+xml,', body)
         self.assertIn(b':9000/?token=', body)
         self.assertNotIn(meta['password'].encode(), body)
         self.assertNotIn(b'PRIVATE_WIREGUARD_BYTES', body)
@@ -114,6 +116,23 @@ class AdminTests(unittest.TestCase):
         self.store.claim(token, record['confirm'])
         with self.assertRaises(web.WebError):
             self.store.inspect(token)
+
+    def test_html_email_preserves_configured_delivery_https_without_passwords(self):
+        meta = bundle(self.backend, self.ident, ['wireguard'])
+        self.state['vpd_origin'] = 'https://profiles.example.com'
+        self.controller.state = self.state
+        status, headers, body = self.request('/manage/file', 'POST', {'device': self.ident, 'kind': 'email'})
+        self.assertEqual(status, '200 OK')
+        self.assertIn('.html', headers['Content-Disposition'])
+        url = re.search(rb'<a href="([^"]+)">', body).group(1).decode()
+        parsed = urlsplit(url)
+        self.assertEqual((parsed.scheme, parsed.netloc, parsed.path), ('https', 'profiles.example.com', '/'))
+        self.assertNotIn(b'http://', body)
+        self.assertNotIn(b':9000/', body)
+        self.assertNotIn(meta['password'].encode(), body)
+        self.assertNotIn(b'PRIVATE_WIREGUARD_BYTES', body)
+        token = parse_qs(parsed.query)['token'][0]
+        self.assertEqual(self.store.inspect(token)['device'], self.ident)
 
     def test_prepared_delivery_does_not_replace_acting_administrator_in_device_view(self):
         bundle(self.backend,self.ident,['wireguard'])

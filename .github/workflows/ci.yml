@@ -8,17 +8,21 @@ jobs:
   tests:
     runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
       - name: Install test utilities
         run: sudo apt-get update && sudo apt-get install -y shellcheck libnss3-tools libreswan qrencode python3-venv wireguard-tools iptables iproute2
       - name: Python test environment
         run: |
           python3 -m venv .venv
-          .venv/bin/pip install waitress==3.0.2 pyzipper==0.4.0 pycryptodomex==3.23.0 quickjs==1.19.4
+          python3 -c "import runpy; from pathlib import Path; Path('build').mkdir(exist_ok=True); Path('build/requirements.lock').write_text(runpy.run_path('src/vpn_dependencies.py')['REQUIREMENTS'])"
+          .venv/bin/pip install --only-binary=:all: --require-hashes -r build/requirements.lock
+          .venv/bin/pip install quickjs==1.19.4
       - name: Rebuild and inspect
         run: |
           python3 build.py
-          git diff --exit-code -- setup.sh update.sh
+          git diff --exit-code -- setup.sh update.sh assets/
           python3 -m compileall -q src
           bash -n setup.sh update.sh
           shellcheck -x setup.sh update.sh

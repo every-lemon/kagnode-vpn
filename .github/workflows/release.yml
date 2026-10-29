@@ -11,7 +11,9 @@ jobs:
     permissions:
       contents: write
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
       - name: Match immutable version
         run: test "$GITHUB_REF_NAME" = "v$(cat VERSION)"
       - name: Validate release description
@@ -24,9 +26,11 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y shellcheck libnss3-tools libreswan qrencode python3-venv wireguard-tools iptables iproute2
           python3 -m venv .venv
-          .venv/bin/pip install waitress==3.0.2 pyzipper==0.4.0 pycryptodomex==3.23.0 quickjs==1.19.4
+          python3 -c "import runpy; from pathlib import Path; Path('build').mkdir(exist_ok=True); Path('build/requirements.lock').write_text(runpy.run_path('src/vpn_dependencies.py')['REQUIREMENTS'])"
+          .venv/bin/pip install --only-binary=:all: --require-hashes -r build/requirements.lock
+          .venv/bin/pip install quickjs==1.19.4
           python3 build.py
-          git diff --exit-code -- setup.sh update.sh
+          git diff --exit-code -- setup.sh update.sh assets/
           shellcheck -x setup.sh update.sh
           sudo .venv/bin/python -m unittest discover -s tests -v
           python3 tools/check_secrets.py
@@ -48,7 +52,7 @@ jobs:
         run: |
           flags=()
           if [[ "$GITHUB_REF_NAME" == *-* ]]; then flags+=(--prerelease); fi
-          gh release create "$GITHUB_REF_NAME" dist/*.deb dist/setup.sh dist/update.sh dist/SHA256SUMS dist/manifest.json dist/manifest.sig --draft --verify-tag --title "VPN ${GITHUB_REF_NAME#v}" --notes-file RELEASE_NOTES.md "${flags[@]}"
+          gh release create "$GITHUB_REF_NAME" dist/*.deb dist/setup.sh dist/update.sh dist/SHA256SUMS dist/manifest.json dist/manifest.sig --draft --verify-tag --title "KagNode VPN ${GITHUB_REF_NAME#v}" --notes-file RELEASE_NOTES.md "${flags[@]}"
           gh release download "$GITHUB_REF_NAME" --dir downloaded
           python3 tools/verify_release.py downloaded "${GITHUB_REF_NAME#v}"
           gh release edit "$GITHUB_REF_NAME" --draft=false

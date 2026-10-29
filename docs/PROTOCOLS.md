@@ -1,6 +1,6 @@
 # Protocol and network scope
 
-VPN 4 initially targets Ubuntu Server 24.04 LTS on amd64. Policies govern IPv4
+KagNode VPN 4 initially targets Ubuntu Server 24.04 LTS on amd64. Policies govern IPv4
 traffic carried through this server. They do not control traffic a device sends
 outside the tunnel. IPv6 tunneling and an operating-system-wide kill switch are
 not implemented; configure client IPv6 behavior separately before relying on a

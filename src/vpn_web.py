@@ -902,9 +902,11 @@ def control_serve(backend):
 
 
 def page(title, body):
-    from vpn_admin import STYLE
+    from vpn_admin import STYLE, brand_markup
+    from vpn_brand import NAME, PROJECT, FAVICON_URI
+    branded_title = title if NAME in title else title + ' · ' + NAME
     return ('<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width">'
-            '<title>' + html.escape(title) + '</title><style>' + STYLE + '</style></head><body class="' + ('management' if '<div class="app-shell"' in body else 'standalone') + '"><header><h1>' + html.escape(title) + '</h1></header><main>' + body + '</main></body></html>').encode()
+            '<title>' + html.escape(branded_title) + '</title><meta name="application-name" content="' + html.escape(NAME, quote=True) + '"><meta name="description" content="' + html.escape(PROJECT, quote=True) + '"><link rel="icon" type="image/svg+xml" href="' + html.escape(FAVICON_URI, quote=True) + '"><style>' + STYLE + '</style></head><body class="' + ('management' if '<div class="app-shell"' in body else 'standalone') + '"><header>' + brand_markup() + '<h1>' + html.escape(title) + '</h1><p class="project-name">' + html.escape(PROJECT) + '</p></header><main>' + body + '</main></body></html>').encode()
 
 
 def form(action, csrf, fields, extra=''):
@@ -968,7 +970,7 @@ class Application:
                 token = query.get('token', [''])[0]
                 result = self.rpc({'op': 'inspect', 'token': token}) if token else None
                 available = [name for name in certs.values() if (self.public / 'certs' / name).is_file()]
-                body = page('VPN profile delivery', portal_markup(result, token, available))
+                body = page('Profile delivery', portal_markup(result, token, available))
             elif self.role == 'downloads' and method in ('GET', 'HEAD') and path.startswith('/files/'):
                 from vpn_admin import profile_mime
                 filename = path.removeprefix('/files/')
@@ -1050,7 +1052,7 @@ class Application:
                         body=page('MFA enrolled','<h1>Save your recovery codes privately</h1><pre>'+html.escape('\n'.join(result['codes']))+'</pre><p>Use the next authenticator code when signing in; the enrollment code has already been used.</p><a href="/manage">Sign in</a>')
                     else:
                         result=self.rpc(dict(context('enroll-info'),token=token))
-                        body=page('Enroll authenticator','<h1>'+html.escape(result['username'])+'</h1><p>Add this key in your authenticator app (issuer VPN):</p><code>'+html.escape(result['secret'])+'</code><form method="post" action="/manage/enroll"><input type="hidden" name="token" value="'+html.escape(token,quote=True)+'"><label>Authenticator code<input name="code" autocomplete="one-time-code" required></label><button>Finish enrollment</button></form>')
+                        body=page('Enroll authenticator','<h1>'+html.escape(result['username'])+'</h1><p>Add this key in your authenticator app:</p><code>'+html.escape(result['secret'])+'</code><form method="post" action="/manage/enroll"><input type="hidden" name="token" value="'+html.escape(token,quote=True)+'"><label>Authenticator code<input name="code" autocomplete="one-time-code" required></label><button>Finish enrollment</button></form>')
                 elif self.role == 'management' and path == '/manage/login':
                     result = self.rpc(dict(context('login'), password=form_data.get('password', ''), username=form_data.get('username', ''), code=form_data.get('code', '')))
                     status, body = '303 See Other', b''
@@ -1073,7 +1075,7 @@ class Application:
                     if path == '/access':
                         from vpn_admin import portal_markup
                         available = [name for name in certs.values() if (self.public / 'certs' / name).is_file()]
-                        body = page('VPN profile delivery', portal_markup(record, token, available))
+                        body = page('Profile delivery', portal_markup(record, token, available))
                     elif record.get('files'):
                         filename = form_data.get('filename', '')
                         if not any(item['filename'] == filename for item in record['files']):
@@ -1232,7 +1234,7 @@ TimeoutStopSec=5
 '''
     common += common_sandbox()
     units = {'vpn-control.socket': '''[Unit]
-Description=VPN privileged local RPC socket
+Description=KagNode VPN privileged local RPC socket
 [Socket]
 ExecStartPre=/usr/bin/systemd-tmpfiles --create /etc/tmpfiles.d/vpn.conf
 ListenStream=/run/vpn/control.sock
@@ -1244,7 +1246,7 @@ RemoveOnStop=yes
 [Install]
 WantedBy=sockets.target
 ''', 'vpn-control.service': '''[Unit]
-Description=VPN privileged backend
+Description=KagNode VPN privileged backend
 Requires=vpn-control.socket vpn-firewall.service
 After=vpn-control.socket vpn-firewall.service network.target ipsec.service
 [Service]
@@ -1260,7 +1262,7 @@ ReadWritePaths=/var/lib/vpn /var/log/vpn /etc/vpn /etc/wireguard /etc/ipsec.d -/
 ''' + common.replace('AF_INET AF_INET6 AF_UNIX', 'AF_INET AF_INET6 AF_UNIX AF_NETLINK') + service_limits() + 'CapabilityBoundingSet=CAP_NET_ADMIN CAP_DAC_OVERRIDE CAP_DAC_READ_SEARCH CAP_CHOWN CAP_FOWNER CAP_SETUID CAP_SETGID CAP_KILL CAP_AUDIT_WRITE\n'}
     for name, account, role in [('vpn-downloads', ACCOUNT, 'downloads'), ('vpn-management', ADMIN_ACCOUNT, 'management')]:
         units[name + '.service'] = '''[Unit]
-Description=VPN ''' + role + ''' HTTP service
+Description=KagNode VPN ''' + role + ''' HTTP service
 Requires=vpn-control.service
 After=vpn-control.service vpn-firewall.service network-online.target
 Wants=network-online.target
@@ -1311,6 +1313,7 @@ def enable(backend, module_source, download_user=None, open_manager=True):
     m.atomic(code_dir / 'vpn_admin.py', m.module_source('vpn_admin'), 0o644)
     m.atomic(code_dir / 'vpn_dashboard.py', m.module_source('vpn_dashboard'), 0o644)
     m.atomic(code_dir / 'vpn_auth.py', m.module_source('vpn_auth'), 0o644)
+    m.atomic(code_dir / 'vpn_brand.py', m.module_source('vpn_brand'), 0o644)
     PUBLIC.mkdir(parents=True, exist_ok=True, mode=0o755)
     PUBLIC.chmod(0o755)
     cert_dir = PUBLIC / 'certs'
@@ -1354,7 +1357,7 @@ def startup_diagnostics(backend):
     units = ['vpn-control.socket', 'vpn-control.service',
              'vpn-downloads.service', 'vpn-management.service',
              'vpn-management-expire.timer']
-    report = ['VPN web failure diagnostics', time.strftime('%Y-%m-%dT%H:%M:%SZ', time.gmtime())]
+    report = ['KagNode VPN web failure diagnostics', time.strftime('%Y-%m-%dT%H:%M:%SZ', time.gmtime())]
     commands = [
         ['systemctl', 'show', *units, '-p', 'ActiveState', '-p', 'SubState', '-p', 'Result',
          '-p', 'ExecMainCode', '-p', 'ExecMainStatus', '-p', 'InvocationID', '-p', 'ExecStart'],
@@ -1447,7 +1450,7 @@ def worker_main():
           channel_timeout=15, cleanup_interval=1, max_request_header_size=16384,
           max_request_body_size=65536, clear_untrusted_proxy_headers=True, trusted_proxy=config.get('trusted_proxy') or None,
           trusted_proxy_headers={'x-forwarded-proto'} if config.get('trusted_proxy') else set(),
-          channel_request_lookahead=0, ident='VPN', ipv6=False)
+          channel_request_lookahead=0, ident='KagNode VPN', ipv6=False)
 
 
 if __name__ == '__main__':

@@ -335,7 +335,7 @@ def watchdog_menu(manager):
 
 def web_menu(manager, backend):
     import vpn_console
-    show('VPN dashboard', 'Management stays online on LAN port 9001. Sign in with your administrator username, password and MFA. Sessions expire after 30 idle minutes or 8 hours. Profile delivery uses port 9000. Public administration requires configured HTTPS.')
+    show('KagNode VPN dashboard', 'Management stays online on LAN port 9001. Sign in with your administrator username, password and MFA. Sessions expire after 30 idle minutes or 8 hours. Profile delivery uses port 9000. Public administration requires configured HTTPS.')
     vpn_console.run(manager, 'system')
 
 
@@ -450,7 +450,7 @@ def profiles(manager):
         backend.migrate()
     while True:
         try:
-            choice = choose('VPN · users and devices', [('users', 'Users and their devices'),
+            choice = choose('KagNode VPN · users and devices', [('users', 'Users and their devices'),
                 ('new-user', 'Add user'), ('new-device', 'Add device'), ('devices', 'Search all devices'),
                 ('discover', 'Recover unassigned IKEv2 certificates'), ('web', 'Web management / public links'),
                 ('hardening', 'Appliance hardening / cleanup status'), ('watchdog', 'Watchdog and automatic recovery'), ('live', 'Live traffic and service status'), ('ports', 'Router and DNS instructions'), ('back', 'Back')])

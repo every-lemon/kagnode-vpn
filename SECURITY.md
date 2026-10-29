@@ -12,3 +12,8 @@ rotate VPN trust material, broaden policy, wipe databases or rewrite unrelated n
 
 Private runtime data and archives are never release artifacts. Verify signed release
 manifests against the pinned release key before executing downloaded installers/updaters.
+
+Runtime wheels are version- and hash-pinned in `src/vpn_dependencies.py`; CI and
+release builds install that same lock. GitHub Actions are pinned to reviewed commits,
+and checkout does not persist repository credentials for application tests.
+Dependency update pull requests require review and qualification before release.

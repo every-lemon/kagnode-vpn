@@ -2,6 +2,7 @@
 import html
 import json
 import re
+from vpn_brand import NAME
 
 def e(value): return html.escape(str(value),quote=True)
 
@@ -28,7 +29,7 @@ def resource_fields(resource=None):
     return '<label>Name<input name="name" maxlength="80" required value="'+e(r.get('name',''))+'"></label><label>IPv4 network<input name="cidr" required placeholder="192.168.10.0/24" value="'+e(r.get('cidr',''))+'"></label>'+select('protocol',[('tcp','TCP'),('udp','UDP'),('any','Any protocol')],r.get('protocol','tcp'))+'<label>Ports (blank for all)<input name="ports" placeholder="443,8443" value="'+e(','.join(map(str,r.get('ports',[]))))+'"></label>'
 
 def render(data, message='', view='overview', **options):
-    from vpn_admin import render as original, form, link, STYLE, SCRIPT
+    from vpn_admin import render as original, form, link, STYLE, SCRIPT, brand_markup
     from vpn_web import page
     actor=data.get('identity',{})
     if view not in ('groups','administrators','audit') and actor.get('role')!='auditor':
@@ -81,11 +82,11 @@ def render(data, message='', view='overview', **options):
     navigation=[('overview','Dashboard'),('devices','Devices'),('users','Users'),('groups','Groups & resources'),('delivery','Delivery'),('jobs','Tasks'),('system','System'),('audit','Audit')]
     if actor.get('role')=='owner':navigation.append(('administrators','Administrators'))
     if actor.get('role')=='auditor':navigation=[('audit','Status & audit')]
-    nav='<aside class="sidebar"><a class="brand" href="/manage">VPN</a><nav aria-label="Main navigation">'+''.join('<a href="'+link(key)+'"'+(' aria-current="page"' if key==view else '')+'>'+e(label)+'</a>' for key,label in navigation)+'</nav></aside>'
+    nav='<aside class="sidebar">'+brand_markup('/manage')+'<nav aria-label="Main navigation">'+''.join('<a href="'+link(key)+'"'+(' aria-current="page"' if key==view else '')+'>'+e(label)+'</a>' for key,label in navigation)+'</nav></aside>'
     top='<header class="topbar"><span>'+e(actor.get('username',''))+' · '+e(actor.get('role',''))+'</span><span class="session">Session expires in <strong data-management data-countdown="'+str(int(data.get('remaining',1800)))+'">30:00</strong></span>'+form('logout',csrf,label='Sign out',target='/manage/logout')+'</header>'
     shell='<div class="app-shell">'+nav+'<div class="workspace" data-view="'+e(view)+'">'+top+body+'</div></div>'
     if actor.get('role')!='auditor':shell+='<script>'+SCRIPT+'</script>'
-    return page('VPN management',shell)
+    return page(NAME + ' management',shell)
 
 def token_history(data, form):
     from vpn_admin import timestamp, link

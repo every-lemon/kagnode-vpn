@@ -23,10 +23,50 @@ class DiagnosticTests(unittest.TestCase):
 
     def runner(self, args, timeout):
         self.assertLessEqual(timeout, 3)
-        output = {'systemctl':'active\n'*7, 'timedatectl':'yes\n', 'dig':'93.184.215.14\n',
+        output = {'systemctl':'active\n'*len(args[2:]), 'timedatectl':'yes\n', 'dig':'93.184.215.14\n',
                   'getent':'203.0.113.9 endpoint\n', 'ip':'default via 192.168.0.1 dev ens18\n',
                   'iptables':'-N VPNSTACK-LAN-FWD\n', 'wg':'wireguard-tools v1.0.20210914\n', 'ipsec':'Linux Libreswan 5.3\n'}[args[0]]
         return subprocess.CompletedProcess(args,0,output,'')
+
+    def test_service_health_covers_all_eight_units_including_adguard(self):
+        requested = []
+        def runner(args, timeout):
+            if args[:2] == ['systemctl', 'is-active']:
+                requested.extend(args[2:])
+                return subprocess.CompletedProcess(args, 0, 'active\n' * 8, '')
+            return self.runner(args, timeout)
+        report = diagnostics.collect(m, runner=runner)
+        self.assertEqual(requested, ['AdGuardHome', 'ipsec', 'xl2tpd', 'wg-quick@wg0',
+                                     'vpn-control', 'vpn-downloads', 'vpn-management', 'vpn-firewall'])
+        self.assertEqual(report['checks'][0]['status'], 'pass')
+        self.assertIn('AdGuard Home', report['checks'][0]['message'])
+
+    def test_failed_or_missing_service_is_unavailable_even_with_nonzero_exit(self):
+        for state, returncode in (('failed', 0), ('failed', 3), ('inactive', 3), ('unknown', 4)):
+            with self.subTest(state=state, returncode=returncode):
+                def runner(args, timeout):
+                    if args[:2] == ['systemctl', 'is-active']:
+                        return subprocess.CompletedProcess(args, returncode, state + '\n' + 'active\n' * 7, 'private-tool-output')
+                    return self.runner(args, timeout)
+                report = diagnostics.collect(m, runner=runner)
+                check = report['checks'][0]
+                self.assertEqual(check['status'], 'failure')
+                self.assertEqual(check['message'], 'One or more managed services are unavailable.')
+                self.assertTrue(check['next_step'])
+                self.assertNotIn('private-tool-output', json.dumps(report))
+
+    def test_incomplete_malformed_and_failed_service_probes_never_pass(self):
+        for output, returncode in (('active\n' * 7, 0), ('active\n' * 9, 0), ('', 0),
+                                   ('active\n' * 8, 1), ('private-tool-output\n' * 8, 0)):
+            with self.subTest(rows=len(output.split()), returncode=returncode):
+                def runner(args, timeout):
+                    if args[:2] == ['systemctl', 'is-active']:
+                        return subprocess.CompletedProcess(args, returncode, output, '')
+                    return self.runner(args, timeout)
+                report = diagnostics.collect(m, runner=runner)
+                self.assertEqual(report['checks'][0]['status'], 'failure')
+                self.assertTrue(report['checks'][0]['next_step'])
+                self.assertNotIn('private-tool-output', json.dumps(report))
 
     def test_findings_never_claim_wan_connectivity_and_do_not_contain_addresses(self):
         report=diagnostics.collect(m,self.backend,self.ident,runner=self.runner)

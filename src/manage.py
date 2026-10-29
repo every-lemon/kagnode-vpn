@@ -21,7 +21,7 @@ import time
 
 # The standalone runtime carries these modules; development imports use sibling sources.
 _MODULE_ARCHIVE = '@@MODULE_ARCHIVE@@'
-_MODULE_NAMES = ('vpn_clients', 'vpn_web', 'vpn_ui', 'vpn_backend', 'vpn_policy', 'vpn_dependencies', 'vpn_watchdog', 'vpn_admin', 'vpn_harden', 'vpn_portal', 'vpn_auth', 'vpn_version', 'vpn_business', 'vpn_native', 'vpn_maintenance', 'vpn_setup', 'vpn_repair', 'vpn_console', 'vpn_dashboard', 'vpn_access', 'vpn_release', 'vpn_tasks', 'vpn_diagnostics')
+_MODULE_NAMES = ('vpn_clients', 'vpn_web', 'vpn_ui', 'vpn_backend', 'vpn_policy', 'vpn_dependencies', 'vpn_watchdog', 'vpn_admin', 'vpn_harden', 'vpn_portal', 'vpn_auth', 'vpn_version', 'vpn_business', 'vpn_native', 'vpn_maintenance', 'vpn_setup', 'vpn_repair', 'vpn_console', 'vpn_dashboard', 'vpn_access', 'vpn_release', 'vpn_tasks', 'vpn_diagnostics', 'vpn_brand')
 def module_source(name):
     if name not in _MODULE_NAMES:
         raise ValueError('Unknown embedded module.')

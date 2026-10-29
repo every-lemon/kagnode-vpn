@@ -1,10 +1,10 @@
 {
   "version": "4.0.0-rc.1",
-  "installer_sha256": "2082d9275d3a9de1654ee7e7c6b05301f55c3ff1fddb9eea33dac767028bd3cd",
+  "installer_sha256": "85618dc721279ed53644037ef05b810701081afcf040ca89a3bcd07273562f72",
   "checks": {
     "automated": {
-      "passed": true,
-      "evidence": "285 tests passed without skips on Ubuntu 24.04 in GitHub CI run 40876295960 (be4dd8d). Coverage includes actual encrypted ESP packets with corrected SPI serialization, rejection of wrong SPI/request-ID and plaintext, rekey and revocation, native firewall reconciliation, all native engine/parser checks and package inspection. The deployed installer digest matches this candidate."
+      "passed": false,
+      "evidence": "The preceding candidate passed 285 tests in CI 40876295960. The KagNode branding, HTTPS email-origin fix, AdGuard service coverage and updated hash-pinned cryptography dependency are awaiting the final Ubuntu CI run. Local deployed-layout, authenticated attachment, MFA/RBAC/access and diagnostic regressions passed; real browser checks passed 12 pages at three viewport sizes under a 512 MiB cap."
     },
     "deployed_reset": {
       "passed": true,
@@ -31,6 +31,6 @@
     "passed": false,
     "started_at": "",
     "finished_at": "",
-    "evidence": "Preliminary read-only observation was stopped for the known firewall implementation fix. It does not count toward qualification; a fresh 24-hour interval must follow the remaining functional checks."
+    "evidence": "Preliminary observation was stopped for the firewall fix and does not count toward qualification. The KagNode/security candidate has not been deployed: the user requested GitHub first and the VM update in a later session. A fresh 24-hour interval must follow deployment and the remaining functional/WAN checks."
   }
 }

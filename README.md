@@ -1,6 +1,8 @@
-# VPN
+# KagNode Open source VPN server
 
-Ubuntu-native administration for WireGuard, IKEv2, L2TP/IPsec, AdGuard Home and VPN profile delivery.
+![KagNode VPN](assets/kagnode-wordmark.svg)
+
+KagNode VPN provides Ubuntu-native administration for WireGuard, IKEv2, L2TP/IPsec, AdGuard Home and VPN profile delivery.
 
 **This checkout prepares 4.0.0-rc.1; it is not published yet. The published evaluation release is 4.0.0-beta.2.** RC publication requires [qualification and real-device testing](docs/RC_TESTING.md).
 See [qualification status](docs/QUALIFICATION.md) for what has actually been tested.
@@ -76,6 +78,9 @@ It preserves 4.x clients, administrator accounts, MFA and AdGuard configuration.
 After success it archives itself under `/var/lib/vpn/updates/update-VERSION.sh`.
 
 ## Native layout
+
+The application displays **KagNode VPN**. Its command and Debian package remain
+`vpn`, with the native paths and `vpn-*` service names below.
 
 | Purpose | Location |
 | --- | --- |

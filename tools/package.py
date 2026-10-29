@@ -20,6 +20,7 @@ shutil.copy2(ROOT/'packaging/vpn',root/'usr/bin/vpn')
 for name in ('postinst','prerm'):shutil.copy2(ROOT/'packaging'/name,root/'DEBIAN'/name)
 for name in ('LICENSE','THIRD_PARTY_NOTICES.md','README.md'):
  if (ROOT/name).exists():shutil.copy2(ROOT/name,root/'usr/share/doc/vpn'/name)
+shutil.copytree(ROOT/'assets',root/'usr/share/doc/vpn/assets')
 (root/'DEBIAN/control').write_text(f'''Package: vpn
 Version: {debian(version)}
 Architecture: amd64
@@ -27,8 +28,8 @@ Maintainer: every-lemon <every-lemon@users.noreply.github.com>
 Section: net
 Priority: optional
 Depends: python3 (>= 3.12), python3-venv, ca-certificates, curl, openssl, iproute2, iptables, wireguard-tools, libnss3-tools, ppp, qrencode, util-linux, dnsutils
-Description: Ubuntu-native VPN administration and profile delivery
- WireGuard, IKEv2 and L2TP administration with MFA, access policy and delivery.
+Description: KagNode Open source VPN server
+ KagNode VPN manages WireGuard, IKEv2 and L2TP with MFA, access policy and delivery.
  Initial configuration requires the explicit vpn setup command.
 ''')
 for path in root.rglob('*'):

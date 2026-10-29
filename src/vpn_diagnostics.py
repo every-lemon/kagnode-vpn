@@ -13,6 +13,8 @@ import time
 
 LIMIT = 65536
 RETENTION = 20
+SERVICE_UNITS = ('AdGuardHome', 'ipsec', 'xl2tpd', 'wg-quick@wg0',
+                 'vpn-control', 'vpn-downloads', 'vpn-management', 'vpn-firewall')
 
 
 def probe(args, timeout):
@@ -86,20 +88,32 @@ def collect(manager, backend=None, device='', runner=probe):
     def add(ident, status, message, next_step=''):
         checks.append(dict(id=ident, status=status, message=message, next_step=next_step))
 
-    def run(args):
+    def run(args, require_success=True):
         try:
             remaining = deadline - time.monotonic()
             if remaining <= 0: return None
             result = runner(args, min(3, remaining))
             if len(result.stdout.encode()) > LIMIT: return None
-            return result if result.returncode == 0 else None
+            return result if not require_success or result.returncode == 0 else None
         except (OSError, ValueError, TimeoutError, subprocess.TimeoutExpired):
             return None
 
-    result = run(['systemctl', 'is-active', 'ipsec', 'xl2tpd', 'wg-quick@wg0',
-                  'vpn-control', 'vpn-downloads', 'vpn-management', 'vpn-firewall'])
-    add('services', 'pass' if result and result.stdout.split() == ['active'] * 7 else 'failure',
-        'All VPN and application services are active.' if result and result.stdout.split() == ['active'] * 7 else 'One or more managed services are unavailable or could not be checked.',
+    result = run(['systemctl', 'is-active', *SERVICE_UNITS], require_success=False)
+    service_states = result.stdout.split() if result else []
+    healthy = result is not None and result.returncode == 0 and service_states == ['active'] * len(SERVICE_UNITS)
+    if healthy:
+        service_message = 'All VPN and application services, including AdGuard Home, are active.'
+    elif result is None:
+        service_message = 'Managed service health could not be checked.'
+    elif len(service_states) != len(SERVICE_UNITS):
+        service_message = 'Managed service health returned an unexpected number of results.'
+    elif (all(value in ('active', 'inactive', 'failed', 'activating', 'deactivating',
+                        'reloading', 'maintenance', 'unknown') for value in service_states)
+          and any(value != 'active' for value in service_states)):
+        service_message = 'One or more managed services are unavailable.'
+    else:
+        service_message = 'Managed service health could not be confirmed.'
+    add('services', 'pass' if healthy else 'failure', service_message,
         'Open System service health; run managed repair for a verified service fault.')
     result = run(['timedatectl', 'show', '-p', 'NTPSynchronized', '--value'])
     add('clock', 'pass' if result and result.stdout.strip() == 'yes' else 'warning',

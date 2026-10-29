@@ -51,7 +51,21 @@ the qualifying 24-hour interval has not started.
 CI run `40876295960` passed all 285 tests without skips for the corrected candidate,
 including real encrypted packets, wrong-SPI/request-ID and plaintext rejection,
 rekey, revocation and native firewall reconciliation. Its installer digest matches
-the deployed server. No RC tag or release has been published.
+the deployed server before the subsequent branding/security changes. No RC tag or
+release has been published.
+
+The subsequent KagNode candidate adds the supplied logo, preserves HTTPS delivery
+addresses in email exports, refreshes the compatible cryptography dependency and
+includes AdGuard Home in service health checks. A focused review of authentication,
+roles, proxy/origin handling and delivery found and fixed the email HTTPS downgrade;
+it is not a complete penetration test. Existing deployment, attachment, access and
+MFA regressions passed locally. Real browser checks passed login, dashboard, group
+controls and delivery at desktop, iPad and mobile sizes, including three fixture MFA
+logins, with no overflow or CSP errors. A narrow-sidebar logo overflow found during
+the checks was corrected. The final browser run peaked at 263.6 MiB under a 512 MiB
+cap, leaving over 7 GiB available on the builder. Final Ubuntu CI evidence is recorded
+in the qualification JSON. The user deferred live deployment until a later session;
+this candidate still requires deployment, external-network checks and observation.
 
 This file records beta evidence. RC/stable promotion still requires the real-device
 and external-network checks described below.

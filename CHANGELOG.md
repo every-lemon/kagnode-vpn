@@ -2,6 +2,13 @@
 
 ## 4.0.0-rc.1 — candidate, unpublished
 
+- Rename the project to KagNode Open source VPN server, with the KagNode VPN
+  wordmark and supplied blue logo across the web interface and setup tools.
+- Refresh the compatible cryptography dependency and use the same hash-verified
+  runtime lock for CI and release builds.
+- Preserve the configured HTTPS delivery address in exported email drafts.
+- Include AdGuard Home in service diagnostics and reject incomplete probe results.
+- Pin the GitHub checkout action and keep repository credentials out of test jobs.
 - Queued, bounded connection checks with cached findings and authenticated session evidence.
 - Owner-only, allowlisted support reports without credentials, addresses or raw journals.
 - Device administrative-state explanations, timestamped export tasks and clearer delivery history.

@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# VPN — Ubuntu Server 24.04, physical servers and virtual machines.
+# KagNode Open source VPN server — Ubuntu Server 24.04.
 # Built from src/installer.sh and src/manage.py. Upstream installers run as root.
 set -Eeuo pipefail
 umask 077
@@ -22,7 +22,7 @@ say() { printf '%b\n' "$*"; }
 die() { printf 'Error: %s\n' "$*" >&2; exit 1; }
 header() {
   say "\n${C}╭──────────────────────────────────────────────────────────╮${Z}"
-  say "${C}│${Z} VPN · Ubuntu Server 24.04                  v${VERSION} ${C}│${Z}"
+  say "${C}│${Z} KagNode VPN · Ubuntu Server 24.04       v${VERSION} ${C}│${Z}"
   say "${C}│${Z} WireGuard · IKEv2 · L2TP/IPsec · AdGuard Home            ${C}│${Z}"
   say "${C}╰──────────────────────────────────────────────────────────╯${Z}"
 }
@@ -60,6 +60,7 @@ trap '[[ -z $CHILD ]] || kill "$CHILD" 2>/dev/null || :; exit 130' INT TERM
 
 help_msg() {
   cat <<'HELP'
+KagNode Open source VPN server
 Usage: sudo bash setup.sh [--plain] [--install|--profiles|--web|--web-status|--reset-clients|--status|--check-adguard|--web-password|--hardening-status|--hardening-queue|--watchdog-status|--watchdog-check|--watchdog-pause|--watchdog-resume|--demo|--help]
 No argument: arrow-key menu for installation, users/devices, web access and diagnostics.
 Ubuntu Server 24.04 on a physical server or VM; containers unsupported.
@@ -80,7 +81,7 @@ demo() {
   run 'Configure IKEv2 and L2TP/IPsec' sleep 0.2
   run 'Configure WireGuard and private profiles' sleep 0.2
   run 'Verify services and display router instructions' sleep 0.2
-  say '  Demo complete. Opening menu: 1 Install VPN · 2 Users/devices · 3 Web access · 4 Diagnostics · 0 Exit'
+  say '  Demo complete. Opening menu: 1 Install KagNode VPN · 2 Users/devices · 3 Web access · 4 Diagnostics · 0 Exit'
 }
 check_platform() {
   (( EUID == 0 )) || die 'Use sudo bash setup.sh.'
@@ -371,7 +372,7 @@ FIREWALL
   chmod 700 "/usr/libexec/vpn/firewall.sh"
   cat > /etc/systemd/system/vpn-firewall.service <<'FIREWALL_SERVICE'
 [Unit]
-Description=VPN DNS guards and WireGuard forwarding
+Description=KagNode VPN DNS guards and WireGuard forwarding
 After=load-iptables-rules.service netfilter-persistent.service ufw.service
 Before=wg-quick@wg0.service
 Wants=network-pre.target
@@ -476,7 +477,7 @@ install_stack() {
   say '  Installs packages, runs upstream installers as root, and configures VPN firewall rules.'
   say '  AdGuard setup is manual. Keep a console available and reserve the LAN address in DHCP.'
   local answer
-  answer=$(ui_choice 'Start / resume installation?' 'no=Cancel' 'yes=Install VPN')
+  answer=$(ui_choice 'Start / resume installation?' 'no=Cancel' 'yes=Install KagNode VPN')
   [[ $answer == yes ]] || { flock -u 9; flock -u 8; return; }
   local -a apt=(env DEBIAN_FRONTEND=noninteractive APT_LISTCHANGES_FRONTEND=none NEEDRESTART_MODE=a)
   python3 /usr/lib/vpn/manage.py setup-stage review
@@ -503,7 +504,7 @@ install_stack() {
   run 'Verify VPN services, forwarding and DNS' final_checks
   python3 "/usr/lib/vpn/manage.py" installed
   cat > "$BASE/README.txt" <<REFERENCE
-VPN $VERSION — Ubuntu Server 24.04
+KagNode VPN $VERSION — Ubuntu Server 24.04
 Management: sudo bash /usr/libexec/vpn/setup.sh --profiles
 Status: sudo bash /usr/libexec/vpn/setup.sh --status
 Private profiles: /var/lib/vpn/clients/
@@ -519,7 +520,7 @@ REFERENCE
   flock -u 8
   : # Package removal is never scheduled automatically.
   python3 "/usr/lib/vpn/manage.py" ports | tee -a "$BASE/README.txt"
-  say "\n${G}  VPN installed. Open Users, devices and profiles to add users, export profiles, or see live bandwidth.${Z}"
+  say "\n${G}  KagNode VPN installed. Open Users, devices and profiles to add users, export profiles, or see live bandwidth.${Z}"
   say "  Private installation log: $LOG"
   if [[ -f /var/run/reboot-required ]]; then say '  Ubuntu reports a reboot is required. Reboot manually, then check --status.'; fi
 }
@@ -559,20 +560,20 @@ DIAGNOSE
   fi
   if [[ ${1:-} == --install ]]; then install_stack; return; fi
   if [[ ${1:-} == --hardening-* || ${1:-} == --watchdog-* || ${1:-} == --web-password || ${1:-} == --profiles || ${1:-} == --status || ${1:-} == --web-status || ${1:-} == --reset-clients || ${1:-} == --web ]]; then
-    [[ -f /usr/lib/vpn/manage.py && -f /etc/vpn/state.json ]] || die 'Install VPN first.'
+    [[ -f /usr/lib/vpn/manage.py && -f /etc/vpn/state.json ]] || die 'Install KagNode VPN first.'
     python3 "/usr/lib/vpn/manage.py" "${1#--}"
     return
   fi
   while true; do
     header
     local choice
-    choice=$(ui_choice 'VPN · Ubuntu 24.04' '1=Install VPN' '2=Users, devices and profiles' '3=Dashboard and profile delivery' '4=Diagnostics and service status' '0=Exit') || return 0
+    choice=$(ui_choice 'KagNode VPN · Ubuntu 24.04' '1=Install KagNode VPN' '2=Users, devices and profiles' '3=Dashboard and profile delivery' '4=Diagnostics and service status' '0=Exit') || return 0
     case $choice in
-      1) if bash "${BASH_SOURCE[0]}" --install; then :; else say "  Installation stopped. See the private log above; select Install VPN to resume."; fi ;;
+      1) if bash "${BASH_SOURCE[0]}" --install; then :; else say "  Installation stopped. See the private log above; select Install KagNode VPN to resume."; fi ;;
       2) if [[ -f /etc/vpn/state.json && -f /usr/lib/vpn/manage.py ]] && command -v python3 >/dev/null; then
            python3 "/usr/lib/vpn/manage.py" profiles
-         else say '  Install VPN first. Returning to the opening menu.'; fi ;;
-      3) if [[ -f /usr/lib/vpn/manage.py && -f /etc/vpn/state.json ]]; then python3 "/usr/lib/vpn/manage.py" web; else say '  Install VPN first.'; fi ;;
+         else say '  Install KagNode VPN first. Returning to the opening menu.'; fi ;;
+      3) if [[ -f /usr/lib/vpn/manage.py && -f /etc/vpn/state.json ]]; then python3 "/usr/lib/vpn/manage.py" web; else say '  Install KagNode VPN first.'; fi ;;
       4) if [[ -f /usr/lib/vpn/manage.py && -f /etc/vpn/state.json ]]; then python3 "/usr/lib/vpn/manage.py" status; fi ;;
       0) return ;;
       *) say '  Choose 1, 2 or 0.' ;;

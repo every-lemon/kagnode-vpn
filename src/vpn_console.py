@@ -27,7 +27,7 @@ def ssh_choice(manager):
     path=manager.BASE/'ssh-choice.json'
     if path.exists(): return
     import vpn_ui as ui
-    choice=ui.choose('Setup / SSH access', [('keep','Keep the current SSH configuration'),('disable','Disable SSH (console access required)'),('enable','Explicitly install and enable OpenSSH')])
+    choice=ui.choose('KagNode VPN / Setup / SSH access', [('keep','Keep the current SSH configuration'),('disable','Disable SSH (console access required)'),('enable','Explicitly install and enable OpenSSH')])
     if choice=='disable':
         if not ui.confirm('Disable SSH? Current remote access may end. Console access is required.'): return
         manager.command(['systemctl','disable','--now','ssh.socket','ssh.service'],check=False)
@@ -54,24 +54,24 @@ def workflow(section,backend,controller,identity,context):
     def name(title,default=''):
         return ui.ask(title,default,validate=name_valid)
     def protocol(device):
-        return choose_items('VPN / Device / Protocol',[(p,p) for p,v in reg['devices'][device]['protocols'].items() if v.get('status')!='revoked'])
+        return choose_items('KagNode VPN / Device / Protocol',[(p,p) for p,v in reg['devices'][device]['protocols'].items() if v.get('status')!='revoked'])
     if section=='status':
-        ui.show('VPN / Status and audit',json.dumps(controller.handle(dict(context,op='audit-view'),0),indent=2));return
+        ui.show('KagNode VPN / Status and audit',json.dumps(controller.handle(dict(context,op='audit-view'),0),indent=2));return
     if section in ('users','devices'):
         kind='user' if section=='users' else 'device'
         items=reg[section]
-        ident=ui.choose('VPN / '+section.title(),[('__new__','Create '+kind)]+[(i,v['name']) for i,v in items.items() if not v.get('deleted')])
+        ident=ui.choose('KagNode VPN / '+section.title(),[('__new__','Create '+kind)]+[(i,v['name']) for i,v in items.items() if not v.get('deleted')])
         if ident=='__new__':
-            form={'action':kind+'-add','name':name('VPN / '+section.title()+' / New name')}
-            if kind=='device':form['user']=choose_items('VPN / Device / Owner',[(i,u['name']) for i,u in reg['users'].items() if not u.get('deleted')])
+            form={'action':kind+'-add','name':name('KagNode VPN / '+section.title()+' / New name')}
+            if kind=='device':form['user']=choose_items('KagNode VPN / Device / Owner',[(i,u['name']) for i,u in reg['users'].items() if not u.get('deleted')])
             return form
         options=[('rename','Rename'),('identity-state','Enable, disable or set expiry')]
         if kind=='device':options += [('assign','Change owner'),('device-group','Change group'),('protocols-add','Add VPN protocols'),('connection-check','Queue connection check'),('check-results','View saved connection checks'),('revoke','Revoke a protocol'),('policy-preview','Preview effective access')]
         else: options += [('user-revoke','Revoke every device for this user')]
-        action=ui.choose('VPN / '+section.title()+' / '+items[ident]['name'],options)
+        action=ui.choose('KagNode VPN / '+section.title()+' / '+items[ident]['name'],options)
         if action=='check-results':
             from vpn_diagnostics import cached, describe
-            ui.show('VPN / Device / Connection checks',describe(cached(backend.m,ident)))
+            ui.show('KagNode VPN / Device / Connection checks',describe(cached(backend.m,ident)))
             return
         form={'action':action,'id':ident,'kind':kind,'device':ident if kind=='device' else ''}
         if action=='rename':form['name']=name('New name',items[ident]['name'])
@@ -96,8 +96,8 @@ def workflow(section,backend,controller,identity,context):
             form.update(address=ui.ask('Destination IPv4',validate=ipaddress.IPv4Address),protocol=ui.choose('Protocol',[('tcp','TCP'),('udp','UDP')]),port=ui.ask('Destination port','443'))
         return form
     if section=='delivery':
-        device=choose_items('VPN / Delivery / Device',[(i,d['name']) for i,d in reg['devices'].items() if not d.get('deleted')])
-        action=ui.choose('VPN / Delivery / Action',[('prepare-export','Prepare native files'),('delivery-link','Publish a one-download link')])
+        device=choose_items('KagNode VPN / Delivery / Device',[(i,d['name']) for i,d in reg['devices'].items() if not d.get('deleted')])
+        action=ui.choose('KagNode VPN / Delivery / Action',[('prepare-export','Prepare native files'),('delivery-link','Publish a one-download link')])
         protocols=ui.multi_select('Protocols',[(p,p) for p,v in reg['devices'][device]['protocols'].items() if v.get('status')=='active'])
         form={'action':action,'device':device,'protocols':','.join(protocols),'platform':'apple'}
         if action=='prepare-export' and 'ikev2' in protocols:
@@ -105,7 +105,7 @@ def workflow(section,backend,controller,identity,context):
             form['password']=ui.ask('Import password (blank generates one)',secret=True)
         return form
     if section=='groups':
-        action=ui.choose('VPN / Groups and resources',[('group-add','Create group'),('resource-save','Create network resource'),('group-rule','Grant or deny a resource'),('group-delete','Delete an empty group')])
+        action=ui.choose('KagNode VPN / Groups and resources',[('group-add','Create group'),('resource-save','Create network resource'),('group-rule','Grant or deny a resource'),('group-delete','Delete an empty group')])
         snap=Business(backend.repo).snapshot();form={'action':action}
         if action=='group-add':
             form.update(name=name('Group name'),internet=ui.choose('VPN internet access',[('yes','Allowed'),('no','Blocked')]),isolation=ui.choose('Client isolation',[('yes','Isolated'),('no','Allow client traffic')]))
@@ -118,19 +118,19 @@ def workflow(section,backend,controller,identity,context):
             elif not ui.confirm('Delete this empty group?'):return
         return form
     if section=='admins':
-        return {'action':'admin-add','username':ui.ask('VPN / Administrators / Username'),'password':ui.ask('Initial password',secret=True),'role':ui.choose('Role',[(r,r.title()) for r in ('owner','operator','auditor')])}
+        return {'action':'admin-add','username':ui.ask('KagNode VPN / Administrators / Username'),'password':ui.ask('Initial password',secret=True),'role':ui.choose('Role',[(r,r.title()) for r in ('owner','operator','auditor')])}
     if section=='system':
-        action=ui.choose('VPN / System',[('doctor','View saved connection checks'),('connection-check','Queue system connection check'),('support-report','View redacted support report'),('system-repair','Repair known managed faults'),('maintenance-status','Security updates and reboots')])
+        action=ui.choose('KagNode VPN / System',[('doctor','View saved connection checks'),('connection-check','Queue system connection check'),('support-report','View redacted support report'),('system-repair','Repair known managed faults'),('maintenance-status','Security updates and reboots')])
         if action=='support-report':
             import base64
             result=controller.handle(dict(context,op='admin-file',form={'kind':'support'}),0)
-            ui.show('VPN / System / Redacted support report',base64.b64decode(result['data']).decode())
+            ui.show('KagNode VPN / System / Redacted support report',base64.b64decode(result['data']).decode())
             return
         if action in ('doctor','maintenance-status'):
             from vpn_repair import Doctor
             from vpn_maintenance import Coordinator
             from vpn_diagnostics import cached,describe
-            ui.show('VPN / System',describe(cached(backend.m)) if action=='doctor' else json.dumps(Coordinator(backend.m).status(),indent=2));return
+            ui.show('KagNode VPN / System',describe(cached(backend.m)) if action=='doctor' else json.dumps(Coordinator(backend.m).status(),indent=2));return
         return {'action':action}
 
 
@@ -141,9 +141,9 @@ def run(manager, initial=None):
     backend=manager.clients_backend();store=Store(backend.repo.path);controller=Controller(backend,store)
     session=None
     try:
-        username=ui.ask('VPN / Sign in / Username')
-        password=ui.ask('VPN / Sign in / Password',secret=True)
-        code=ui.ask('VPN / Sign in / Authenticator or recovery code',secret=True)
+        username=ui.ask('KagNode VPN / Sign in / Username')
+        password=ui.ask('KagNode VPN / Sign in / Password',secret=True)
+        code=ui.ask('KagNode VPN / Sign in / Authenticator or recovery code',secret=True)
         session,csrf=store.login(password,'console',username,code)
         password=code=None
         state=manager.load();context={'session':session,'csrf':csrf,'peer':state['lan'],'host':state['lan']+':9001'}
@@ -153,7 +153,7 @@ def run(manager, initial=None):
             if identity['role']!='auditor':options += [('users','Users'),('devices','Devices'),('groups','Groups and resources'),('delivery','Profile delivery')]
             if identity['role']=='owner':options += [('admins','Administrators'),('system','System maintenance')]
             options += [('logout','Sign out')]
-            section=initial or ui.choose('VPN / '+identity['username']+' ('+identity['role']+')',options);initial=None
+            section=initial or ui.choose('KagNode VPN / '+identity['username']+' ('+identity['role']+')',options);initial=None
             if section=='logout':return
             try:
                 # Deliberate keyboard navigation is activity; passive status polling is not.
@@ -164,14 +164,14 @@ def run(manager, initial=None):
                 result=controller.handle(dict(context,op='action',form=form),0)
                 message=result.get('message','Completed.')
                 if result.get('url'):message+='\n'+result['url']
-                ui.show('VPN / Result',message)
+                ui.show('KagNode VPN / Result',message)
             except ui.Cancel:
                 continue
             except (ValueError,RuntimeError) as exc:
-                ui.show('VPN / Could not complete',str(exc))
+                ui.show('KagNode VPN / Could not complete',str(exc))
                 store.identity(session)  # Expired/revoked sessions leave the console.
     except AuthError as exc:
-        ui.show('VPN / Sign in required',str(exc))
+        ui.show('KagNode VPN / Sign in required',str(exc))
     except ui.Cancel:
         return
     finally:
