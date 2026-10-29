@@ -27,6 +27,13 @@ RC candidate evidence recorded on 28 October 2026:
 This evidence does not replace real Apple import, external IKEv2 connectivity or
 24 completed observation hours. RC publication remains blocked by their record.
 
+On 29 October, the approved deployment retained Libreswan 5.4.1 and exposed an
+unprefixed Mode Config server keyword rejected by that engine. The corrected
+connection passed its real parser before installation resumed. CI now installs
+Ubuntu's Libreswan parser and tests the generated configuration, including rejection
+of an invalid connection. Earlier CI evidence above predates this correction;
+the current qualification record must include the new CI result before release.
+
 This file records beta evidence. RC/stable promotion still requires the real-device
 and external-network checks described below.
 

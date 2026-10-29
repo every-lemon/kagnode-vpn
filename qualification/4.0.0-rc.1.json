@@ -1,10 +1,10 @@
 {
   "version": "4.0.0-rc.1",
-  "installer_sha256": "bcf29e9c068f679aa6c86dea31fd4efa6f738000a9aeee405633d358d6cfe13e",
+  "installer_sha256": "b3860e810dcfd6590bf64956eae2991cc6895c6d28b1499f592de5ff0a74a301",
   "checks": {
     "automated": {
-      "passed": true,
-      "evidence": "279 tests passed on Ubuntu 24.04 in GitHub CI run 40696402548 for the final runtime, including kernel, NSS, sandbox and publication-gate checks."
+      "passed": false,
+      "evidence": "Awaiting CI for the Libreswan native configuration fix and real parser regression test. Prior runtime passed 282 tests; the corrected candidate passed the retained server Libreswan 5.4.1 parser before deployment."
     },
     "deployed_reset": {
       "passed": true,

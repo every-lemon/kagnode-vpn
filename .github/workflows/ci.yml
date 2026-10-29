@@ -10,7 +10,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Install test utilities
-        run: sudo apt-get update && sudo apt-get install -y shellcheck libnss3-tools qrencode python3-venv wireguard-tools iptables iproute2
+        run: sudo apt-get update && sudo apt-get install -y shellcheck libnss3-tools libreswan qrencode python3-venv wireguard-tools iptables iproute2
       - name: Python test environment
         run: |
           python3 -m venv .venv

@@ -110,7 +110,7 @@ def install(manager):
   rightrsasigkey=%cert
   rightaddresspool={ike[10]}-{ike[250]}
   modecfgdns={state['lan']}
-  modecfgserver=yes
+  leftmodecfgserver=yes
   modecfgpull=yes
   narrowing=yes
   ikev2=insist
