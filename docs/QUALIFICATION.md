@@ -64,7 +64,9 @@ controls and delivery at desktop, iPad and mobile sizes, including three fixture
 logins, with no overflow or CSP errors. A narrow-sidebar logo overflow found during
 the checks was corrected. The final browser run peaked at 263.6 MiB under a 512 MiB
 cap, leaving over 7 GiB available on the builder. Final Ubuntu CI evidence is recorded
-in the qualification JSON. The user deferred live deployment until a later session;
+in the qualification JSON: run `40966884394` passed all 289 tests without skips on
+commit `87837f7`, including the HTTPS email and AdGuard service regressions and
+package inspection. The user deferred live deployment until a later session;
 this candidate still requires deployment, external-network checks and observation.
 
 This file records beta evidence. RC/stable promotion still requires the real-device

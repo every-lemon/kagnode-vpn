@@ -3,8 +3,8 @@
   "installer_sha256": "85618dc721279ed53644037ef05b810701081afcf040ca89a3bcd07273562f72",
   "checks": {
     "automated": {
-      "passed": false,
-      "evidence": "The preceding candidate passed 285 tests in CI 40876295960. The KagNode branding, HTTPS email-origin fix, AdGuard service coverage and updated hash-pinned cryptography dependency are awaiting the final Ubuntu CI run. Local deployed-layout, authenticated attachment, MFA/RBAC/access and diagnostic regressions passed; real browser checks passed 12 pages at three viewport sizes under a 512 MiB cap."
+      "passed": true,
+      "evidence": "289 tests passed without skips on Ubuntu 24.04 in GitHub CI run 40966884394 (87837f7), using the hash-pinned runtime dependencies. Checks include isolated deployed branding renderers, authenticated HTTPS email delivery, MFA/RBAC/proxy access, all eight managed service results, actual encrypted ESP traffic/rekey/revocation, native parsers, signatures and package inspection. Real local browser checks separately passed 12 pages at desktop/iPad/mobile sizes under a 512 MiB cap. This KagNode candidate has not yet been deployed to the live VM at the user's request."
     },
     "deployed_reset": {
       "passed": true,
