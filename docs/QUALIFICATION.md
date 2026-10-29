@@ -31,8 +31,12 @@ On 29 October, the approved deployment retained Libreswan 5.4.1 and exposed an
 unprefixed Mode Config server keyword rejected by that engine. The corrected
 connection passed its real parser before installation resumed. CI now installs
 Ubuntu's Libreswan parser and tests the generated configuration, including rejection
-of an invalid connection. Earlier CI evidence above predates this correction;
-the current qualification record must include the new CI result before release.
+of an invalid connection. CI run `40867859053` passed all 283 tests; the same parser
+regression passed against the retained 5.4.1 engine. The live installation then
+completed every recorded setup stage: AdGuard DNS UDP/TCP, all VPN engines, both
+HTTP services, monitoring and security-update timers passed verification. The first
+owner enrolled MFA; the client database remains empty for deliberate device creation.
+Real Apple import, external connectivity and observation remain pending.
 
 This file records beta evidence. RC/stable promotion still requires the real-device
 and external-network checks described below.

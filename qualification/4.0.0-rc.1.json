@@ -3,12 +3,12 @@
   "installer_sha256": "b3860e810dcfd6590bf64956eae2991cc6895c6d28b1499f592de5ff0a74a301",
   "checks": {
     "automated": {
-      "passed": false,
-      "evidence": "Awaiting CI for the Libreswan native configuration fix and real parser regression test. Prior runtime passed 282 tests; the corrected candidate passed the retained server Libreswan 5.4.1 parser before deployment."
+      "passed": true,
+      "evidence": "283 tests passed on Ubuntu 24.04 in GitHub CI run 40867859053 (16a6d0d), including real Ubuntu Libreswan configuration parsing, kernel policy, NSS, sandbox and publication-gate checks. The retained server Libreswan 5.4.1 independently passed the same parser regression."
     },
     "deployed_reset": {
       "passed": true,
-      "evidence": "Disposable Ubuntu 24.04 VM: retained 3.8 runtime/native engines, verified backup interruption and clean reboot without legacy reactivation, resumed reset, new CA, empty clients/tokens, fresh MFA owner; networking and engine binaries preserved. Native-NSS aliases were used only in the legacy fixture."
+      "evidence": "Disposable Ubuntu 24.04 VM: retained 3.8 runtime/native engines, verified backup interruption and clean reboot without legacy reactivation, resumed reset, new CA, empty clients/tokens, fresh MFA owner; networking and engine binaries preserved. Native-NSS aliases were used only in the legacy fixture. The approved live 3.8-to-4 transition subsequently completed with a stopped-service recovery backup, fresh Owner/MFA and manual AdGuard setup. Resuming the native configuration fix preserved the existing new trust database and retained Libreswan 5.4.1; all installation stages and managed services passed verification."
     },
     "beta2_upgrade": {
       "passed": true,
@@ -16,7 +16,7 @@
     },
     "native_protocols": {
       "passed": true,
-      "evidence": "Fresh-reset Ubuntu VM created WireGuard, IKEv2 and L2TP clients; Apple/Android/PKCS12 exports validated cryptographically and VPD accepted one native-profile claim only."
+      "evidence": "Fresh-reset Ubuntu VM created WireGuard, IKEv2 and L2TP clients; Apple/Android/PKCS12 exports validated cryptographically and VPD accepted one native-profile claim only. The corrected native generator also passed the real Ubuntu package parser in CI and the retained 5.4.1 parser on the deployed server."
     },
     "apple_import": {
       "passed": false,
