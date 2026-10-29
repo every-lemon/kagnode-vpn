@@ -7,6 +7,7 @@ import os
 from pathlib import Path
 import re
 import shlex
+import socket
 import subprocess
 import time
 import threading
@@ -39,6 +40,16 @@ def effective(registry, ident):
         return False
     policy = device.get('lan_policy', 'inherit')
     return (user.get('lan_policy', 'block') if policy == 'inherit' else policy) == 'allow'
+
+
+def policy_spi(spi):
+    """Encode canonical ESP SPI for libxt_policy's raw network-order ABI field."""
+    if type(spi) is not int or not 0 < spi < 2**32:
+        raise ValueError('Invalid kernel IPsec SPI.')
+    # libxt_policy stores the CLI integer directly in __be32 without htonl;
+    # xt_policy compares those bytes with xfrm_state.id.spi. Convert only here:
+    # hook events, stored sessions, and kernel identity checks remain canonical.
+    return hex(socket.htonl(spi))
 
 
 def event(backend, value):
@@ -142,7 +153,7 @@ def grants(backend, override=None, identities=False):
             valid = ident in reg['devices'] and row.get('boot') == Path('/proc/sys/kernel/random/boot_id').read_text().strip()
             if protocol == 'ikev2':
                 valid = valid and (row['reqid'], row['spi']) in active
-                match = ['-s', row['address'], '-m', 'policy', '--dir', 'in', '--pol', 'ipsec', '--proto', 'esp', '--reqid', str(row['reqid']), '--spi', hex(row['spi'])]
+                match = ['-s', row['address'], '-m', 'policy', '--dir', 'in', '--pol', 'ipsec', '--proto', 'esp', '--reqid', str(row['reqid']), '--spi', policy_spi(row['spi'])]
             else:
                 info = command(backend, ['ip', '-j', 'link', 'show', 'dev', row['interface']], check=False)
                 try:
@@ -173,7 +184,7 @@ def revoked_matches(backend):
         if record.get('status') == 'active' or row.get('boot') != boot:
             continue
         if row['protocol'] == 'ikev2' and (row['reqid'], row['spi']) in active:
-            matches.append(['-s', str(ipaddress.IPv4Address(row['address'])), '-m', 'policy', '--dir', 'in', '--pol', 'ipsec', '--proto', 'esp', '--reqid', str(row['reqid']), '--spi', hex(row['spi'])])
+            matches.append(['-s', str(ipaddress.IPv4Address(row['address'])), '-m', 'policy', '--dir', 'in', '--pol', 'ipsec', '--proto', 'esp', '--reqid', str(row['reqid']), '--spi', policy_spi(row['spi'])])
         elif row['protocol'] == 'l2tp':
             info = command(backend, ['ip', '-j', 'link', 'show', 'dev', row['interface']], check=False)
             try:

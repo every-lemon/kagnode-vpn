@@ -24,8 +24,8 @@ RC candidate evidence recorded on 28 October 2026:
   Earlier local headless navigation/login waits timed out; the final instrumented
   direct-connection run passed. Real-device login remains part of the manual gate.
 
-This evidence does not replace real Apple import, external IKEv2 connectivity or
-24 completed observation hours. RC publication remains blocked by their record.
+This evidence does not replace real-device, external-network or completed
+observation checks. RC publication remains blocked by their qualification record.
 
 On 29 October, the approved deployment retained Libreswan 5.4.1 and exposed an
 unprefixed Mode Config server keyword rejected by that engine. The corrected
@@ -35,8 +35,18 @@ of an invalid connection. CI run `40867859053` passed all 283 tests; the same pa
 regression passed against the retained 5.4.1 engine. The live installation then
 completed every recorded setup stage: AdGuard DNS UDP/TCP, all VPN engines, both
 HTTP services, monitoring and security-update timers passed verification. The first
-owner enrolled MFA; the client database remains empty for deliberate device creation.
-Real Apple import, external connectivity and observation remain pending.
+owner enrolled MFA; the client database was initially empty for deliberate device creation.
+
+A dedicated Apple profile was subsequently delivered once through native VPD. The
+user reported the iPad connected, corroborated by its authenticated IPsec session.
+That real traffic test exposed a firewall SPI byte-order error: source, policy,
+protocol and request-ID selectors matched, while the SPI selector rejected traffic.
+The corrected serialization matched live packets and was deployed as a signed
+candidate package without changing client credentials, trust or administrator MFA.
+DNS and internet forwarding then matched the intended per-device rules, with
+bidirectional encrypted traffic observed. Independent-network testing remains
+pending. Preliminary observation was stopped when the implementation changed;
+the qualifying 24-hour interval has not started.
 
 This file records beta evidence. RC/stable promotion still requires the real-device
 and external-network checks described below.
@@ -97,10 +107,10 @@ Evidence recorded on the builder (27 October 2026):
   manifest verified against the pinned Ed25519 public key. The tagged release
   workflow repeats tests, package construction and signature verification before upload.
 
-Release gates still requiring recorded evidence include real Apple-device import,
-an external IKEv2 connection, and a complete deployed 3.x-to-4 reset rehearsal beyond
-the isolated reset/interruption tests. A simulated browser or server-side export
-check does not establish that a real device connects through the user's router.
+Remaining RC gates are listed in the qualification record, including independent
+external IKEv2 connectivity and completed observation. Real Apple installation and
+the approved deployed 3.x-to-4 reset now have evidence above. A simulated browser
+or server-side export check does not establish an external client connection.
 
 Resource budget: test VM capped at 1024 MiB guest RAM/one vCPU; tests run serially.
 The resumed VM initially used MemoryHigh=1280M, MemoryMax=1536M and a guard that terminates

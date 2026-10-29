@@ -3,6 +3,7 @@ import io
 import json
 from pathlib import Path
 import subprocess
+import sys
 import unittest
 from unittest.mock import patch
 import test_manager as tm
@@ -134,9 +135,33 @@ class BackendTests(unittest.TestCase):
         with patch.object(policy, 'kernel_sessions', return_value={(42, 101)}):
             grants = policy.grants(self.backend)
         self.assertEqual(len(grants), 1)
-        self.assertIn(hex(101), grants[0])
+        self.assertIn(policy.policy_spi(101), grants[0])
         with patch.object(policy, 'kernel_sessions', return_value={(43, 101)}):
             self.assertEqual(policy.grants(self.backend), [])
+
+    def test_policy_spi_emits_network_order_bytes_without_changing_session_identity(self):
+        canonical = 0x1234abcd
+        encoded = int(policy.policy_spi(canonical), 0)
+        self.assertEqual(encoded.to_bytes(4, sys.byteorder), bytes.fromhex('1234abcd'))
+        for invalid in (0, -1, 2**32, True, '932221431', None):
+            with self.subTest(value=invalid), self.assertRaises(ValueError):
+                policy.policy_spi(invalid)
+        reg, device = self.backend.device(self.ident)
+        device['protocols']['ikev2'] = {'backend': self.ident, 'status': 'active'}
+        self.backend.save(reg)
+        policy.event(self.backend, dict(protocol='ikev2', up=True, identity=self.ident,
+                                       address='192.168.43.12', reqid=42, spi=hex(canonical)))
+        with self.backend.repo.connect() as db:
+            stored = json.loads(db.execute('SELECT data FROM policy_sessions').fetchone()[0])
+        self.assertEqual(stored['spi'], canonical)
+        with patch.object(policy, 'kernel_sessions', return_value={(42, canonical)}):
+            grant = policy.grants(self.backend, identities=True)[0][1]
+            self.assertEqual(grant[grant.index('--spi') + 1], policy.policy_spi(canonical))
+            reg = self.backend.load()
+            reg['devices'][self.ident]['protocols']['ikev2']['status'] = 'revoked'
+            self.backend.save(reg)
+            denied = policy.revoked_matches(self.backend)[0]
+            self.assertEqual(denied[denied.index('--spi') + 1], policy.policy_spi(canonical))
 
     def test_management_deadline_survives_wall_clock_changes_and_rejects_new_boot(self):
         wall, mono = [1000], [50]

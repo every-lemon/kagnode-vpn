@@ -1,10 +1,10 @@
 {
   "version": "4.0.0-rc.1",
-  "installer_sha256": "b3860e810dcfd6590bf64956eae2991cc6895c6d28b1499f592de5ff0a74a301",
+  "installer_sha256": "2082d9275d3a9de1654ee7e7c6b05301f55c3ff1fddb9eea33dac767028bd3cd",
   "checks": {
     "automated": {
-      "passed": true,
-      "evidence": "283 tests passed on Ubuntu 24.04 in GitHub CI run 40867859053 (16a6d0d), including real Ubuntu Libreswan configuration parsing, kernel policy, NSS, sandbox and publication-gate checks. The retained server Libreswan 5.4.1 independently passed the same parser regression."
+      "passed": false,
+      "evidence": "Previous candidate passed 283 Ubuntu 24.04 tests in CI run 40867859053; exact-candidate CI for the newly corrected firewall SPI serialization and encrypted-packet regressions is pending."
     },
     "deployed_reset": {
       "passed": true,
@@ -19,18 +19,18 @@
       "evidence": "Fresh-reset Ubuntu VM created WireGuard, IKEv2 and L2TP clients; Apple/Android/PKCS12 exports validated cryptographically and VPD accepted one native-profile claim only. The corrected native generator also passed the real Ubuntu package parser in CI and the retained 5.4.1 parser on the deployed server."
     },
     "apple_import": {
-      "passed": false,
-      "evidence": ""
+      "passed": true,
+      "evidence": "On 29 October 2026 the user installed the native Apple profile on an iPad and reported Connected. The server independently confirmed the matching authenticated ESP session and one consumed VPD file token. The real traffic test exposed and corrected firewall SPI serialization; DNS and forwarding then matched and encrypted traffic flowed in both directions. This records Apple installation, not independent WAN verification."
     },
     "external_ikev2": {
       "passed": false,
-      "evidence": ""
+      "evidence": "The real iPad connection is confirmed, but a genuinely independent hotspot/mobile-data connection has not yet been verified."
     }
   },
   "observation": {
     "passed": false,
     "started_at": "",
     "finished_at": "",
-    "evidence": ""
+    "evidence": "Preliminary read-only observation was stopped for the known firewall implementation fix. It does not count toward qualification; a fresh 24-hour interval must follow the remaining functional checks."
   }
 }

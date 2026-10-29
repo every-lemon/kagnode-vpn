@@ -9,6 +9,8 @@
 - Retire generated SysV services explicitly and serialize reset with legacy CLI/watchdog jobs.
 - Use the explicit server-side Mode Config keyword for retained Libreswan engines;
   validate generated connections with the real Ubuntu Libreswan parser in CI.
+- Encode the authenticated IPsec SPI in the byte order required by the firewall
+  match, restoring client DNS/internet while retaining session binding and isolation.
 
 Real-device/WAN testing and 24-hour observation must pass before this candidate is released.
 

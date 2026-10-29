@@ -11,6 +11,8 @@ from test_manager import ROOT
 @unittest.skipUnless(os.geteuid() == 0 and shutil.which('unshare') and shutil.which('iptables'), 'requires network namespace privileges')
 class KernelPolicyTests(unittest.TestCase):
     def test_kernel_reqid_spi_grants_rekey_and_deny_rules(self):
+        if not shutil.which('wg'):
+            self.skipTest('WireGuard tools required')
         if subprocess.run(['unshare', '--net', 'true'], capture_output=True).returncode:
             self.skipTest('network namespaces unavailable')
         program = r'''
@@ -38,7 +40,7 @@ with tempfile.TemporaryDirectory() as tmp:
  def state(spi,reqid=42):
   command(['ip','xfrm','state','add','src','203.0.113.1','dst','192.168.0.8','proto','esp','spi',hex(spi),'reqid',str(reqid),'mode','tunnel','auth','sha256','0x'+'11'*32,'enc','aes','0x'+'22'*16])
  def event(spi,up=True):p.event(b,dict(protocol='ikev2',up=up,identity=d,address='192.168.43.12',reqid=42,spi=hex(spi)))
- def rule(spi):return ['iptables','-C','VPNSTACK-LAN-FWD','-s','192.168.43.12','-m','policy','--dir','in','--pol','ipsec','--proto','esp','--reqid','42','--spi',hex(spi),'-d','192.168.0.0/24','-j','RETURN']
+ def rule(spi):return ['iptables','-C','VPNSTACK-LAN-FWD','-s','192.168.43.12','-m','policy','--dir','in','--pol','ipsec','--proto','esp','--reqid','42','--spi',p.policy_spi(spi),'-d','192.168.0.0/24','-j','RETURN']
  state(256);event(256);command(rule(256))
  # Canonical iptables-save formatting differs from generated source text.
  # An idle reconcile must skip writes, but detect and repair external damage.
@@ -88,7 +90,7 @@ with tempfile.TemporaryDirectory() as tmp:
  state(258);event(258)
  reg=b.load();reg['devices'][d]['protocols']['ikev2']['status']='revoked';b.save(reg)
  p.apply(b)
- deny=['iptables','-C','VPNSTACK-LAN-FWD','-s','192.168.43.12','-m','policy','--dir','in','--pol','ipsec','--proto','esp','--reqid','42','--spi',hex(258),'-j','DROP']
+ deny=['iptables','-C','VPNSTACK-LAN-FWD','-s','192.168.43.12','-m','policy','--dir','in','--pol','ipsec','--proto','esp','--reqid','42','--spi',p.policy_spi(258),'-j','DROP']
  command(deny)
  command(['ip','xfrm','state','delete','src','203.0.113.1','dst','192.168.0.8','proto','esp','spi',hex(258)])
  state(259);p.apply(b)
