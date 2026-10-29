@@ -48,6 +48,11 @@ bidirectional encrypted traffic observed. Independent-network testing remains
 pending. Preliminary observation was stopped when the implementation changed;
 the qualifying 24-hour interval has not started.
 
+CI run `40876295960` passed all 285 tests without skips for the corrected candidate,
+including real encrypted packets, wrong-SPI/request-ID and plaintext rejection,
+rekey, revocation and native firewall reconciliation. Its installer digest matches
+the deployed server. No RC tag or release has been published.
+
 This file records beta evidence. RC/stable promotion still requires the real-device
 and external-network checks described below.
 

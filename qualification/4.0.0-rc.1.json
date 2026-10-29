@@ -3,8 +3,8 @@
   "installer_sha256": "2082d9275d3a9de1654ee7e7c6b05301f55c3ff1fddb9eea33dac767028bd3cd",
   "checks": {
     "automated": {
-      "passed": false,
-      "evidence": "Previous candidate passed 283 Ubuntu 24.04 tests in CI run 40867859053; exact-candidate CI for the newly corrected firewall SPI serialization and encrypted-packet regressions is pending."
+      "passed": true,
+      "evidence": "285 tests passed without skips on Ubuntu 24.04 in GitHub CI run 40876295960 (be4dd8d). Coverage includes actual encrypted ESP packets with corrected SPI serialization, rejection of wrong SPI/request-ID and plaintext, rekey and revocation, native firewall reconciliation, all native engine/parser checks and package inspection. The deployed installer digest matches this candidate."
     },
     "deployed_reset": {
       "passed": true,
@@ -16,7 +16,7 @@
     },
     "native_protocols": {
       "passed": true,
-      "evidence": "Fresh-reset Ubuntu VM created WireGuard, IKEv2 and L2TP clients; Apple/Android/PKCS12 exports validated cryptographically and VPD accepted one native-profile claim only. The corrected native generator also passed the real Ubuntu package parser in CI and the retained 5.4.1 parser on the deployed server."
+      "evidence": "Fresh-reset Ubuntu VM created WireGuard, IKEv2 and L2TP clients; Apple/Android/PKCS12 exports validated cryptographically and VPD accepted one native-profile claim only. The corrected native generator also passed the real Ubuntu package parser in CI and the retained 5.4.1 parser on the deployed server. The real iPad traffic test subsequently exposed firewall SPI byte ordering; the corrected candidate passed actual encrypted-packet, rekey and revocation regressions in CI 40876295960, and the deployed session showed DNS forwarding and encrypted traffic in both directions."
     },
     "apple_import": {
       "passed": true,
