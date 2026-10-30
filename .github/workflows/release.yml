@@ -39,13 +39,13 @@ jobs:
           SIGNING_KEY: ${{ secrets.VPN_RELEASE_KEY }}
         run: |
           umask 077
-          python3 tools/qualify_release.py
           test -n "$SIGNING_KEY"
           key=$(mktemp)
           trap 'rm -f "$key"' EXIT
           printf '%s\n' "$SIGNING_KEY" > "$key"
           VPN_RELEASE_KEY="$key" python3 tools/package.py
           openssl pkeyutl -verify -pubin -inkey release-key.pem -rawin -in dist/manifest.json -sigfile dist/manifest.sig
+          python3 tools/qualify_release.py
       - name: Upload draft, verify downloads, then publish
         env:
           GH_TOKEN: ${{ github.token }}
@@ -55,4 +55,8 @@ jobs:
           gh release create "$GITHUB_REF_NAME" dist/*.deb dist/setup.sh dist/update.sh dist/SHA256SUMS dist/manifest.json dist/manifest.sig --draft --verify-tag --title "KagNode VPN ${GITHUB_REF_NAME#v}" --notes-file RELEASE_NOTES.md "${flags[@]}"
           gh release download "$GITHUB_REF_NAME" --dir downloaded
           python3 tools/verify_release.py downloaded "${GITHUB_REF_NAME#v}"
-          gh release edit "$GITHUB_REF_NAME" --draft=false
+          if [[ "$GITHUB_REF_NAME" == *-* ]]; then
+            gh release edit "$GITHUB_REF_NAME" --draft=false --latest=false
+          else
+            gh release edit "$GITHUB_REF_NAME" --draft=false --latest
+          fi

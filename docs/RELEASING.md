@@ -31,3 +31,8 @@ replacement key accepted without verification.
 
 4.x updates preserve operational state. A failure can restore previous application code;
 it must not restore retired 3.x client trust or silently re-enable old administrators.
+
+For the first stable release, follow [stable qualification](STABLE_TESTING.md).
+Build the package before qualification: stable records bind setup.sh, update.sh
+and the Debian package, not only the installer. Do not create a stable tag while
+functional or observation evidence is incomplete. Mark stable publication Latest.

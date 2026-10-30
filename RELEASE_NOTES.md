@@ -1,1 +1,1 @@
-Fixed for 4.0.0-rc.1
+Fixed for 4.0.0

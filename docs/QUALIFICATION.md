@@ -1,6 +1,13 @@
-# VPN 4.0 qualification
+# KagNode VPN 4.0 qualification
 
-RC.1 is an unpublished candidate. Its current gates are tracked in
+The current version is the **unpublished 4.0.0 stable candidate**. Features are frozen;
+follow [stable testing](STABLE_TESTING.md) and `qualification/4.0.0.json`. Historical
+RC evidence below is retained for traceability and does not prove this candidate
+passed live or independent-network checks. No qualifying observation is running.
+
+## Historical RC and beta evidence
+
+RC.1 remained unpublished. Its historical gates are tracked in
 `qualification/4.0.0-rc.1.json`; follow [RC testing](RC_TESTING.md).
 Beta.2's final tagged workflows passed **258 tests** and independent downloaded
 asset signature/filename/checksum verification. Evidence below describes its backend.

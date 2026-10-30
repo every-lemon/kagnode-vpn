@@ -3,6 +3,7 @@ import contextlib
 import fcntl
 import io
 import json
+import re
 import subprocess
 import sys
 from pathlib import Path
@@ -13,8 +14,17 @@ from unittest.mock import patch
 ROOT=Path(__file__).resolve().parents[1]
 source=(ROOT/'update.sh').read_text()
 runtime=source.split("<<'VPN_STACK_UPDATER_PY'\n",1)[1].split('\nVPN_STACK_UPDATER_PY\n',1)[0]
-u=types.ModuleType('updater_runtime');exec(compile(runtime,'updater-runtime','exec'),u.__dict__)
-PAYLOAD=u.decode_payload()
+embedded=types.ModuleType('embedded_updater');exec(compile(runtime,'updater-runtime','exec'),embedded.__dict__)
+PAYLOAD=embedded.decode_payload()
+sys.path.insert(0,str(ROOT/'src'))
+u=types.ModuleType('updater_runtime');exec(compile((ROOT/'src/updater.py').read_text(),'updater-source','exec'),u.__dict__)
+
+def release_payload(version):
+    payload=json.loads(json.dumps(PAYLOAD))
+    payload['version']=version
+    payload['files']['setup.sh']=re.sub(r'^VERSION=\S+$','VERSION='+version,payload['files']['setup.sh'],flags=re.M)
+    payload['sha256']['setup.sh']=u.sha(payload['files']['setup.sh'].encode())
+    return payload
 
 class FakeUpdater(u.Updater):
     def __init__(self,*args,fail=None,**kw):super().__init__(*args,**kw);self.calls=[];self.fail=fail
@@ -49,7 +59,13 @@ class UpdaterTests(unittest.TestCase):
         with self.assertRaisesRegex(u.UpdateError,'Finish VPN 4'):self.execute(self.updater())
         self.assertEqual((self.code/'manage.py').read_text(),'old runtime');self.assertTrue(self.source.exists())
     def test_prerelease_opt_in_required(self):
-        with self.assertRaisesRegex(u.UpdateError,'Prerelease'):self.execute(FakeUpdater(self.source,PAYLOAD,self.root))
+        update=FakeUpdater(self.source,release_payload('4.0.0-rc.1'),self.root)
+        with self.assertRaisesRegex(u.UpdateError,'Prerelease'):self.execute(update)
+    def test_stable_upgrade_from_rc_preserves_private_state_without_opt_in(self):
+        (self.code/'VERSION').write_text('4.0.0-rc.1\n')
+        update=FakeUpdater(self.source,release_payload('4.0.0'),self.root)
+        self.execute(update);self.assert_private_unchanged()
+        self.assertEqual((self.code/'VERSION').read_text(),'4.0.0\n')
     def test_downgrade_refused(self):
         (self.code/'VERSION').write_text('4.0.1')
         with self.assertRaisesRegex(u.UpdateError,'downgrade'):self.execute(self.updater())
@@ -59,6 +75,27 @@ class UpdaterTests(unittest.TestCase):
         self.assert_private_unchanged();self.assertTrue(self.source.exists())
         self.assertEqual((self.code/'manage.py').read_text(),'old runtime')
         self.assertTrue((update.run_dir/'failure-journal.log').exists())
+        self.assertEqual(json.loads((update.run_dir/'journal.json').read_text())['status'],'code-restored')
+    def test_one_failed_service_cannot_be_hidden_by_healthy_services(self):
+        for service in ('vpn-control','vpn-management','vpn-downloads','vpn-firewall','ipsec','xl2tpd','wg-quick@wg0','AdGuardHome'):
+            with self.subTest(service=service):
+                update=self.updater();original=update.command
+                def probe(args,check=True):
+                    if args==['systemctl','is-active','--quiet',service]:
+                        raise u.UpdateError('required service is inactive')
+                    return original(args,check)
+                update.command=probe
+                with self.assertRaisesRegex(u.UpdateError,'inactive'):self.execute(update)
+                self.assertEqual((self.code/'manage.py').read_text(),'old runtime')
+                self.assertTrue(self.source.exists());self.assert_private_unchanged()
+                self.assertFalse((self.base/'updates'/('update-'+PAYLOAD['version']+'.sh')).exists())
+                self.assertEqual(json.loads((update.run_dir/'journal.json').read_text())['status'],'code-restored')
+    def test_diagnostic_timeout_cannot_prevent_rollback(self):
+        update=self.updater(fail='refresh-web')
+        with patch.object(update,'diagnostics',side_effect=subprocess.TimeoutExpired('journalctl',20)),contextlib.redirect_stderr(io.StringIO()):
+            with self.assertRaisesRegex(u.UpdateError,'deployment'):self.execute(update)
+        self.assertEqual((self.code/'manage.py').read_text(),'old runtime')
+        self.assertTrue(self.source.exists());self.assert_private_unchanged()
         self.assertEqual(json.loads((update.run_dir/'journal.json').read_text())['status'],'code-restored')
     def test_failure_restores_owned_firewall_and_units_without_touching_unrelated_units(self):
         units=self.root/'etc/systemd/system';units.mkdir(parents=True)
@@ -117,7 +154,7 @@ class UpdaterTests(unittest.TestCase):
 
 class PayloadTests(unittest.TestCase):
     def test_embedded_payload_matches_generated_setup(self):
-        self.assertEqual(PAYLOAD['files']['setup.sh'],(ROOT/'setup.sh').read_text());u.validate_payload(PAYLOAD)
+        self.assertEqual(PAYLOAD['files']['setup.sh'],(ROOT/'setup.sh').read_text());u.validate_payload(PAYLOAD);embedded.validate_payload(PAYLOAD)
     def test_modified_payload_rejected(self):
         payload=json.loads(json.dumps(PAYLOAD));payload['files']['manage.py']+='\n# modified'
         with self.assertRaises(u.UpdateError):u.validate_payload(payload)

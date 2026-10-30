@@ -1,6 +1,9 @@
-# RC.1 candidate qualification
+# Historical RC.1 candidate qualification
 
-`4.0.0-rc.1` is under qualification and is not a published release. The published
+RC.1 was never published. Current work qualifies stable 4.0.0 directly; follow
+[stable testing](STABLE_TESTING.md). The instructions below retain the earlier RC process.
+
+`4.0.0-rc.1` is not a published release. The published
 evaluation release remains beta.2. Do not create its Git tag until all gates pass.
 
 ## Builder checks

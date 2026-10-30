@@ -407,6 +407,10 @@ class Controller:
             if self.backend.repo.pending_delete(request.get('form', {}).get('device', '')):
                 raise WebError('Profile deletion is pending; downloads are unavailable.')
             with self.backend.m.lock():
+                # Account changes share this lock. Recheck after acquiring it so
+                # a disable/demotion that committed after the initial check
+                # cannot release private credentials or issue a delivery token.
+                self.authorize(request, mutate=True)
                 return attachment(self.backend, self.store, self.state, request.get('form', {}))
         if op == 'audit-view':
             self.authorize(request)

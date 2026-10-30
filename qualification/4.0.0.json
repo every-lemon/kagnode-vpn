@@ -1,0 +1,69 @@
+{
+  "version": "4.0.0",
+  "installer_sha256": "7f1cb8f9532504d0db9814c3463e4f4be375b2bbf7ec6a51eeaa1025cf115c71",
+  "artifacts": {
+    "setup.sh": "7f1cb8f9532504d0db9814c3463e4f4be375b2bbf7ec6a51eeaa1025cf115c71",
+    "update.sh": "85b9ae8484f9261c282e15c5012fe445150a6e6e04526eb916075a9e77bac475",
+    "vpn_4.0.0_amd64.deb": "67aaafdadda33116244808b650c2ab9ced7a27d3ca49447c95e1d3900361b487"
+  },
+  "checks": {
+    "automated": {
+      "passed": false,
+      "evidence": "Pending verification for the exact 4.0.0 stable candidate; historical RC evidence remains separate."
+    },
+    "deployed_reset": {
+      "passed": false,
+      "evidence": "Pending verification for the exact 4.0.0 stable candidate; historical RC evidence remains separate."
+    },
+    "beta2_upgrade": {
+      "passed": false,
+      "evidence": "Pending verification for the exact 4.0.0 stable candidate; historical RC evidence remains separate."
+    },
+    "native_protocols": {
+      "passed": false,
+      "evidence": "Pending verification for the exact 4.0.0 stable candidate; historical RC evidence remains separate."
+    },
+    "apple_import": {
+      "passed": false,
+      "evidence": "Pending verification for the exact 4.0.0 stable candidate; historical RC evidence remains separate."
+    },
+    "external_ikev2": {
+      "passed": false,
+      "evidence": "Pending verification for the exact 4.0.0 stable candidate; historical RC evidence remains separate."
+    },
+    "fresh_install": {
+      "passed": false,
+      "evidence": "Pending verification for the exact 4.0.0 stable candidate; historical RC evidence remains separate."
+    },
+    "rc_upgrade": {
+      "passed": false,
+      "evidence": "Pending verification for the exact 4.0.0 stable candidate; historical RC evidence remains separate."
+    },
+    "interrupted_update": {
+      "passed": false,
+      "evidence": "Pending verification for the exact 4.0.0 stable candidate; historical RC evidence remains separate."
+    },
+    "package_lifecycle": {
+      "passed": false,
+      "evidence": "Pending verification for the exact 4.0.0 stable candidate; historical RC evidence remains separate."
+    },
+    "web_usability": {
+      "passed": false,
+      "evidence": "Pending verification for the exact 4.0.0 stable candidate; historical RC evidence remains separate."
+    }
+  },
+  "observation": {
+    "passed": false,
+    "installer_sha256": "7f1cb8f9532504d0db9814c3463e4f4be375b2bbf7ec6a51eeaa1025cf115c71",
+    "log_sha256": "",
+    "started_at": "",
+    "finished_at": "",
+    "elapsed_seconds": 0,
+    "sample_count": 0,
+    "max_gap_seconds": 0,
+    "candidate_unchanged": false,
+    "boot_unchanged": false,
+    "services_healthy": false,
+    "evidence": "Not started. Deploy this candidate and pass functional and independent-network checks before collecting a fresh uninterrupted 24-hour observation."
+  }
+}

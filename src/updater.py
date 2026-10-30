@@ -187,10 +187,17 @@ class Updater:
                 # Package removal stops these timers. A verified application
                 # redeployment must also resume monitoring and maintenance.
                 self.command(['systemctl','start','vpn-watchdog.timer','vpn-maintenance.timer'])
-                self.command(['systemctl','is-active','vpn-control','vpn-management','vpn-downloads','ipsec','xl2tpd','wg-quick@wg0','AdGuardHome'])
+                # systemctl is-active with several units succeeds when ANY unit
+                # is active. Verify each required service before committing.
+                for service in ('vpn-control','vpn-management','vpn-downloads','vpn-firewall','ipsec','xl2tpd','wg-quick@wg0','AdGuardHome'):
+                    self.command(['systemctl','is-active','--quiet',service])
                 journal['status']='complete';atomic(self.run_dir/'journal.json',json.dumps(journal))
             except BaseException:
-                self.diagnostics('failure')
+                # A stalled journal or unavailable systemd must not prevent
+                # restoring the previous application after deployment fails.
+                try:self.diagnostics('failure')
+                except Exception:
+                    print('Failure diagnostics unavailable; restoring previous application files.',file=sys.stderr)
                 for path,data in previous.items():
                     if data is None:path.unlink(missing_ok=True)
                     else:atomic(path,data,0o644 if path.name=='VERSION' else 0o700)

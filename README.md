@@ -4,17 +4,17 @@
 
 KagNode VPN provides Ubuntu-native administration for WireGuard, IKEv2, L2TP/IPsec, AdGuard Home and VPN profile delivery.
 
-**This checkout prepares 4.0.0-rc.1; it is not published yet. The published evaluation release is 4.0.0-beta.2.** RC publication requires [qualification and real-device testing](docs/RC_TESTING.md).
+**Source version: 4.0.0.** Published downloads are listed in [GitHub Releases](https://github.com/every-lemon/vpn/releases). A version string alone does not establish release qualification; stable publication requires [qualification and real-device testing](docs/STABLE_TESTING.md).
 See [qualification status](docs/QUALIFICATION.md) for what has actually been tested.
 
 Target: Ubuntu Server 24.04 LTS amd64, physical server or VM; systemd required.
 
 ## Installation
 
-Install a signed release package, then configure it explicitly:
+After obtaining and verifying the signed 4.0.0 package, configure it explicitly:
 
 ```sh
-sudo apt install ./vpn_4.0.0-beta.2_amd64.deb
+sudo apt install ./vpn_4.0.0_amd64.deb
 sudo vpn setup --install
 ```
 
@@ -73,7 +73,8 @@ sudo vpn repair                 # authenticated repair workflow
 sudo vpn status
 ```
 
-A downloaded updater can run with `sudo bash update.sh --prerelease` for a beta/RC.
+A verified stable updater runs with `sudo bash update.sh`; beta/RC candidates require
+`sudo bash update.sh --prerelease`.
 It preserves 4.x clients, administrator accounts, MFA and AdGuard configuration.
 After success it archives itself under `/var/lib/vpn/updates/update-VERSION.sh`.
 

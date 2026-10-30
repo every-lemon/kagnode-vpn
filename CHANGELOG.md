@@ -1,5 +1,18 @@
 # Changelog
 
+## 4.0.0 — stable candidate, unpublished
+
+- Freeze features for stable qualification with KagNode VPN branding.
+- Preserve existing 4.x clients, trust material, administrator MFA and AdGuard settings.
+- Recheck administrator authorization under the native lock before returning
+  private attachments, preventing a concurrent disable/demotion from leaking profiles.
+- Require all managed services to pass updater verification and keep rollback running
+  even when collecting failure diagnostics fails.
+- Bind stable qualification to the exact release artifacts and completed observation.
+
+Live deployment, independent-network testing and 24-hour observation remain required.
+No stable tag or release is published until those checks pass.
+
 ## 4.0.0-rc.1 — candidate, unpublished
 
 - Rename the project to KagNode Open source VPN server, with the KagNode VPN

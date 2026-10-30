@@ -1,4 +1,5 @@
 """HTTP authorization regressions updated for mandatory MFA and individual sessions."""
+import contextlib
 import json
 import unittest
 from unittest.mock import patch
@@ -37,3 +38,22 @@ class AuthenticationTests(unittest.TestCase):
         with patch.object(self.backend.m,'command') as command:
             command.return_value.stdout='active\n'*6
             self.assertEqual(self.request('/api/v1/status')[0],'200 OK')
+
+    def test_private_download_rechecks_session_after_native_lock_acquisition(self):
+        # Owner changes and downloads share the native lock. The change may
+        # commit after the HTTP request's initial authorization but before it
+        # acquires that lock, so credential access must check again inside it.
+        for change in ({'enabled':False},{'role':'auditor'}):
+            with self.subTest(change=change):
+                name='disabled-operator' if 'enabled' in change else 'demoted-operator'
+                actor,self.session,self.csrf,_=enroll(self.store,name,'operator-password-fixture','operator',self.actor)
+                original_lock=self.backend.m.lock
+                @contextlib.contextmanager
+                def revoke_before_lock():
+                    with original_lock():
+                        self.store.admin_change(self.actor,actor,**change)
+                        yield
+                with patch.object(self.backend.m,'lock',revoke_before_lock):
+                    status,_,body=self.request('/manage/file','POST',{'device':self.ident,'kind':'wireguard'})
+                self.assertEqual(status,'403 Forbidden')
+                self.assertNotIn(b'PRIVATE_WIREGUARD_BYTES',body)
