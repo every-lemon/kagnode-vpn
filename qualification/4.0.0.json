@@ -8,55 +8,55 @@
   },
   "checks": {
     "automated": {
-      "passed": false,
-      "evidence": "Pending final-build verification after populated-worker dependency and Ubuntu kernel-output diagnostic fixes. Prior candidate results are retained privately. User confirmed live owner/MFA, repaired management pages, Wi-Fi VPN internet/reconnect and independent mobile-data hotspot internet/sleep-wake; these are historical until final deployment checks pass."
+      "passed": true,
+      "evidence": "GitHub Ubuntu 24.04 CI 41044124999 on commit c945ac3 passed all 308 tests without skips. All three CI payload hashes match the final signed artifacts byte-for-byte. Coverage includes native encrypted ESP/rekey/revocation, MFA/RBAC, concurrent VPD claims, private-download revocation, bounded update readiness/rollback, 15 populated deployed-worker routes, safe error logs, Ubuntu text/JSON IPsec diagnostics, and exact-artifact/live-probe observation gates."
     },
     "deployed_reset": {
       "passed": true,
       "evidence": "Reviewed prior disposable legacy reset/interruption/reboot/resume and approved live 3.x fresh start documented in docs/QUALIFICATION.md. Stable src/vpn_setup.py, vpn_auth.py, vpn_native.py and vpn_policy.py are unchanged from deployed SPI-fix commit 7f94452. Historical reset evidence is retained for these unchanged mechanisms; it is not substituted for stable fresh-install or interrupted-updater gates."
     },
     "beta2_upgrade": {
-      "passed": false,
-      "evidence": "Pending verification for the exact 4.0.0 stable candidate; historical RC evidence remains separate."
+      "passed": true,
+      "evidence": "An isolated Ubuntu 24.04 VM began with the published beta.2 runtime and retained native clients, trust and an MFA-enrolled fixture owner. After a deliberate interruption and cold boot, the exact final 95764a2f updater completed recovery. All eight services, the archived updater digest, trust/client/owner-MFA hashes, AdGuard, IPsec and Ubuntu networking passed independent postchecks. Private evidence: final-recovery-postcheck.log."
     },
     "native_protocols": {
       "passed": false,
       "evidence": "Pending verification for the exact 4.0.0 stable candidate; historical RC evidence remains separate."
     },
     "apple_import": {
-      "passed": false,
-      "evidence": "Pending verification for the exact 4.0.0 stable candidate; historical RC evidence remains separate."
+      "passed": true,
+      "evidence": "The user installed the native Apple mobileconfig on a real iPad and confirmed connection; the profile and VPN trust hashes were preserved through the final 4.0.0 deployment. On 30 October, the user confirmed Wi-Fi internet access on initial connection and reconnection, and independent mobile-data hotspot internet before/after sleep. Final server verification confirmed an authenticated IPsec binding and bidirectional traffic. Later UI/helper/diagnostic fixes did not alter native trust or policy code."
     },
     "external_ikev2": {
-      "passed": false,
-      "evidence": "Pending verification for the exact 4.0.0 stable candidate; historical RC evidence remains separate."
+      "passed": true,
+      "evidence": "On 30 October 2026 the user confirmed VPN and websites work before and after sleep on an iPad connected to a phone hotspot using mobile data with phone Wi-Fi off. Home Wi-Fi/reconnection also passed. Later UI/helper/diagnostic-only changes preserved the native engine, policy, client credentials and profile bytes. Final server checks confirmed an authenticated SA and bidirectional traffic on LAN; the external-network evidence is the explicit user test, not a simultaneous WAN capture."
     },
     "fresh_install": {
       "passed": false,
       "evidence": "Pending verification for the exact 4.0.0 stable candidate; historical RC evidence remains separate."
     },
     "rc_upgrade": {
-      "passed": false,
-      "evidence": "Pending final-build verification after populated-worker dependency and Ubuntu kernel-output diagnostic fixes. Prior candidate results are retained privately. User confirmed live owner/MFA, repaired management pages, Wi-Fi VPN internet/reconnect and independent mobile-data hotspot internet/sleep-wake; these are historical until final deployment checks pass."
+      "passed": true,
+      "evidence": "The final signed setup, updater and package deployed successfully on the live Ubuntu 24.04 server, retaining Libreswan 5.4.1. Exact worker modules, all eight services/timers, DNS UDP/TCP, web health, database integrity and manual reboot mode passed. Original VPN trust/client/WireGuard/PPP, administrator password/MFA and AdGuard hashes matched the pre-upgrade backup. An earlier update timing failure rolled back safely and was corrected with bounded readiness checks."
     },
     "interrupted_update": {
-      "passed": false,
-      "evidence": "Pending final-build verification after populated-worker dependency and Ubuntu kernel-output diagnostic fixes. Prior candidate results are retained privately. User confirmed live owner/MFA, repaired management pages, Wi-Fi VPN internet/reconnect and independent mobile-data hotspot internet/sleep-wake; these are historical until final deployment checks pass."
+      "passed": true,
+      "evidence": "The disposable Ubuntu VM was deliberately SIGKILLed after an atomic manager write with a durable staged update journal, then powered off and cold-booted. Fault injection used the preceding candidate with the same staging/recovery logic; the exact final 95764a2f updater resumed the partial beta.2 state and completed. Independent postchecks verified the final archive digest, all eight services and unchanged identity/settings hashes. Private evidence: revised-interruption-run.log and final-recovery-postcheck.log."
     },
     "package_lifecycle": {
-      "passed": false,
-      "evidence": "Pending final-build verification after populated-worker dependency and Ubuntu kernel-output diagnostic fixes. Prior candidate results are retained privately. User confirmed live owner/MFA, repaired management pages, Wi-Fi VPN internet/reconnect and independent mobile-data hotspot internet/sleep-wake; these are historical until final deployment checks pass."
+      "passed": true,
+      "evidence": "The exact final a69faf6a Debian package passed installation, reinstallation, removal and restoration in the disposable Ubuntu VM. Native engines and private state remained present; management stopped on removal. Final updater restoration verified all services, trust, all protocol clients, owner password/MFA, AdGuard, IPsec and Ubuntu networking. Private evidence: final-package-run.log."
     },
     "web_usability": {
-      "passed": false,
-      "evidence": "Pending final-build verification after populated-worker dependency and Ubuntu kernel-output diagnostic fixes. Prior candidate results are retained privately. User confirmed live owner/MFA, repaired management pages, Wi-Fi VPN internet/reconnect and independent mobile-data hotspot internet/sleep-wake; these are historical until final deployment checks pass."
+      "passed": true,
+      "evidence": "The compiled renderer passed 12 visual pages and 33 routes at desktop, iPad and mobile widths, with three synthetic MFA logins, no overflow/CSP/page errors and edited forms retained during polling. Final HTML/CSS is unchanged. The final installed worker passed all 15 populated authenticated routes, queued IKEv2 export, native Apple MIME/single-use delivery, diagnostics and the Owner-only report. The real iPad user confirmed owner/MFA login and working Devices, device details, Users, Delivery and System after the deployed dependency fix. Private evidence: stable-web/results.json and final-http-run.log."
     }
   },
   "observation": {
     "passed": false,
     "installer_sha256": "4007a58edd413c4ea2259b0533d45eb5fcac6589319ad2d39925052254711923",
     "log_sha256": "",
-    "started_at": "",
+    "started_at": "2026-10-30T10:56:27.528943+00:00",
     "finished_at": "",
     "elapsed_seconds": 0,
     "sample_count": 0,
@@ -64,7 +64,7 @@
     "candidate_unchanged": false,
     "boot_unchanged": false,
     "services_healthy": false,
-    "evidence": "Not started. Deploy this candidate and pass functional and independent-network checks before collecting a fresh uninterrupted 24-hour observation.",
+    "evidence": "Collecting on the exact final installer since 30 October 2026 at 10:56:27 UTC; earliest completion is 31 October at 10:56:27 UTC. A root-only observer capped at 64 MiB records eight services, UDP/TCP DNS, both HTTP health endpoints, jobs, watchdog and memory every minute. Initial probes passed with no restart/reboot attempts. No completed 24-hour evidence exists yet; full-log and human review are required before marking passed.",
     "probes_healthy": false
   }
 }

@@ -2,23 +2,69 @@
 
 The current version is the **unpublished 4.0.0 stable candidate**. Features are frozen;
 follow [stable testing](STABLE_TESTING.md) and `qualification/4.0.0.json`. Historical
-RC evidence below is retained for traceability and does not prove this candidate
-passed live or independent-network checks. No qualifying observation is running.
+RC evidence below is retained for traceability. Stable publication requires the
+exact final artifacts and a completed, reviewed 24-hour observation.
 
-Stable candidate CI `41037512094` on commit `3574bd9` passed all **300 tests**
+Stable candidate CI `41044124999` on commit `c945ac3` passed all **308 tests**
 without skips on Ubuntu 24.04. These include the private-download authorization
-race regression, individual-service update verification, rollback despite failed
-diagnostic collection, and strict artifact qualification. CI's installer, updater
+race regression, bounded individual-service readiness checks, rollback despite failed
+diagnostic collection, populated deployed-worker routes, Ubuntu IPsec diagnostic
+parsing, and strict artifact/observation qualification. CI's installer, updater
 and Debian package hashes match the signed local candidate byte-for-byte. A
 cross-builder comparison caught the package archive root inheriting the builder's
 umask; explicit directory permissions and an umask regression corrected it.
 
-The exact compiled 4.0.0 browser runtime passed 12 visual pages and 33 route checks
-across desktop, iPad-sized and mobile viewports, with three synthetic MFA logins,
-no overflow/CSP/page errors and edited forms preserved during polling. Desktop
-profile selections also remained intact. The 512 MiB cap reclaimed memory without
-OOM; minimum builder memory available was 7446 MiB. Screenshots and raw evidence
-remain private fixtures, not real-device evidence. Live qualification remains pending.
+The compiled 4.0.0 renderer passed 12 visual pages and 33 route checks across desktop,
+iPad-sized and mobile viewports, with three synthetic MFA logins, no overflow/CSP/page
+errors and edited forms preserved during polling. Desktop profile selections also
+remained intact. The 512 MiB cap reclaimed memory without OOM; minimum builder memory
+available was 7446 MiB. The subsequent final candidate adds a missing deployed-worker
+dependency and diagnostic parsing; the rendered HTML/CSS is unchanged. The actual
+installed final worker passed all 15 populated authenticated routes. Screenshots and
+raw evidence remain private fixtures; real-device results are recorded separately below.
+
+Stable candidate evidence recorded on 30 October 2026:
+
+- The final signed installer, updater and package were deployed to the live Ubuntu
+  24.04 server. The installed application and package both report 4.0.0. Libreswan
+  5.4.1 was retained. VPN trust, all existing protocol clients, administrator password
+  and MFA enrollment, and AdGuard configuration matched the verified private backup.
+- An initial update caught WireGuard still starting after the firewall restart and
+  rolled back safely. A bounded readiness wait now checks every required service;
+  the final deployment passed all eight services, DNS over UDP/TCP, both HTTP health
+  endpoints, database integrity and security-update timers. No production reset or
+  reboot was performed.
+- Real iPad Safari testing confirmed existing owner/MFA login and the KagNode
+  dashboard. A missing module in the deployed worker initially broke populated
+  navigation; the permanent fix and regression cover the actual installed layout.
+  The user then confirmed Devices, device details, Users, Delivery and System work.
+- The existing Apple profile connected on home Wi-Fi, with websites loading both
+  initially and after reconnection. On an independent phone hotspot using mobile
+  data with the phone's Wi-Fi off, the user confirmed VPN and websites work before
+  and after iPad sleep. Later UI/helper/diagnostic fixes preserved native trust and
+  policy code. Final server checks confirmed an authenticated binding and traffic
+  in both directions; that later server snapshot was on LAN, not a simultaneous
+  capture of the hotspot test.
+- In an isolated Ubuntu VM, the final updater recovered a deliberately interrupted
+  beta.2 upgrade after a cold boot. The interruption used the preceding candidate's
+  unchanged staging/recovery path; recovery used the exact final updater. All eight
+  services and the original identity, AdGuard, IPsec and networking checks passed.
+- The exact final package passed installation, reinstallation, removal and
+  restoration. Removal stopped application management while retaining the native
+  engines and private state. Restoration preserved trust, protocol clients, owner
+  password/MFA and Ubuntu networking.
+- Through the actual installed broker and worker, queued IKEv2 export, all 15
+  populated authenticated routes, native Apple MIME delivery, single-use token
+  rejection, queued diagnostics and the Owner-only redacted report passed.
+- A separate fresh Ubuntu installation rehearsal is still running. Its result
+  will be added only after verification finishes.
+
+The qualifying observation started **30 October 2026 at 10:56:27 UTC** on the exact
+final installer. Earliest completion is **31 October at 10:56:27 UTC**. Its dedicated
+read-only service is capped at 64 MiB and checks eight services, UDP/TCP DNS, both
+HTTP health endpoints, job counters, recovery attempts and available memory every
+minute. Initial samples passed, with about 11 MiB peak observer memory. The release
+gate remains closed until the full interval and private evidence are reviewed.
 
 ## Historical RC and beta evidence
 

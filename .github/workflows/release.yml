@@ -32,7 +32,7 @@ jobs:
           python3 build.py
           git diff --exit-code -- setup.sh update.sh assets/
           shellcheck -x setup.sh update.sh
-          sudo .venv/bin/python -m unittest discover -s tests -v
+          sudo .venv/bin/python tools/run_release_tests.py
           python3 tools/check_secrets.py
       - name: Build and sign
         env:
