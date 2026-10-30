@@ -46,7 +46,8 @@ After functional checks pass, collect at least 24 completed continuous hours on 
 exact candidate. Run the maintained `tools/observe_rc.py` helper in a dedicated
 transient systemd service with a 64 MiB memory limit and at least 25 hours runtime.
 Use a new root-only log pathname; never overwrite earlier evidence. The helper is
-read-only and includes candidate identity and continuity checks. Its summary is an
+read-only and includes candidate identity and continuity checks, DNS UDP/TCP and
+both web health endpoints. Its summary is an
 input to review, not automatic approval to publish.
 
 Review service failures, queue errors, DNS and VPN health, watchdog/reboot activity,

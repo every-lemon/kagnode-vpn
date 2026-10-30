@@ -3,6 +3,7 @@
 import argparse
 import datetime
 import hashlib
+import ipaddress
 import json
 import math
 import os
@@ -14,6 +15,35 @@ import time
 
 UNITS=('AdGuardHome','ipsec','xl2tpd','wg-quick@wg0','vpn-control','vpn-downloads','vpn-management','vpn-firewall')
 INSTALLER=Path('/usr/libexec/vpn/setup.sh')
+NETWORK_PROBES=('dns_udp','dns_tcp','http_downloads','http_management')
+
+def network_summary(path=Path('/var/lib/vpn/public/public.json')):
+    """Probe fixed public health routes only; never retain response bodies or URLs."""
+    status={name:False for name in NETWORK_PROBES}
+    try:
+        if path.is_symlink() or not path.is_file() or path.stat().st_size>65536:return status
+        address=ipaddress.IPv4Address(json.loads(path.read_text())['lan'])
+        if address.is_unspecified or address.is_loopback or address.is_multicast or address.is_reserved:return status
+        address=str(address)
+    except (OSError,ValueError,KeyError,TypeError):return status
+    def run(args):
+        try:
+            result=subprocess.run(args,stdout=subprocess.PIPE,stderr=subprocess.DEVNULL,timeout=2,check=False)
+            return result.stdout if result.returncode==0 and len(result.stdout)<=4096 else None
+        except (OSError,subprocess.SubprocessError):return None
+    for name,transport in (('dns_udp','+notcp'),('dns_tcp','+tcp')):
+        reply=run(['dig','-r','-4','@'+address,'example.com.','A','+short','+time=1','+tries=1',
+                   '+bufsize=1232','+ignore',transport])
+        for line in reply.splitlines() if reply else ():
+            try:
+                if ipaddress.IPv4Address(line.decode('ascii')).is_global:status[name]=True
+            except (ValueError,UnicodeError):pass
+    for name,port in (('http_downloads',9000),('http_management',9001)):
+        reply=run(['curl','--disable','--silent','--fail','--noproxy','*','--proto','=http',
+                   '--connect-timeout','1','--max-time','1.5','--max-filesize','16',
+                   '--write-out','\n%{http_code}','http://'+address+':'+str(port)+'/health'])
+        status[name]=reply==b'OK\n\n200'
+    return status
 
 def installed_digest(path=INSTALLER):
     try:
@@ -56,6 +86,9 @@ def summarize(path):
         services=row.get('services',{})
         return (not row.get('probe_failed') and isinstance(services,dict) and set(services)==set(UNITS) and
                 all(isinstance(service,dict) and service.get('state')=='active' for service in services.values()))
+    def responsive(row):
+        probes=row.get('probes',{})
+        return isinstance(probes,dict) and set(probes)==set(NETWORK_PROBES) and all(value is True for value in probes.values())
     boot=started.get('boot_id')
     return {'passed':False, 'installer_sha256':digest,'log_sha256':hashlib.sha256(data).hexdigest(),
         'started_at':datetime.datetime.fromtimestamp(start,datetime.timezone.utc).isoformat(),
@@ -64,6 +97,7 @@ def summarize(path):
         'candidate_unchanged':all(row.get('installer_sha256')==digest for row in samples+[finished]),
         'boot_unchanged':bool(boot) and all(row.get('boot_id')==boot for row in samples+[finished]),
         'services_healthy':all(healthy(row) for row in samples),
+        'probes_healthy':all(responsive(row) for row in samples),
         'evidence':'Collector summary only. Review private health logs, recovery attempts, memory and real-client checks before marking passed.'}
 
 def job_summary(path, since):
@@ -107,6 +141,7 @@ def sample(since):
     except (OSError,subprocess.SubprocessError):result['probe_failed']=True
     result['jobs']=job_summary(Path('/var/lib/vpn/backend.db'),since)
     result['watchdog']=watchdog_summary(Path('/var/lib/vpn/watchdog-state.json'))
+    result['probes']=network_summary()
     return result
 
 def main():

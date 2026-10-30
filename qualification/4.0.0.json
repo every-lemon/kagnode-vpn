@@ -64,6 +64,7 @@
     "candidate_unchanged": false,
     "boot_unchanged": false,
     "services_healthy": false,
-    "evidence": "Not started. Deploy this candidate and pass functional and independent-network checks before collecting a fresh uninterrupted 24-hour observation."
+    "evidence": "Not started. Deploy this candidate and pass functional and independent-network checks before collecting a fresh uninterrupted 24-hour observation.",
+    "probes_healthy": false
   }
 }

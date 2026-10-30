@@ -35,7 +35,7 @@ class GateTests(unittest.TestCase):
         value['observation']['started_at']=(finished-datetime.timedelta(seconds=86460)).isoformat()
         value['artifacts']={'setup.sh':'a'*64,'update.sh':'b'*64,'vpn_4.0.0_amd64.deb':'c'*64}
         value['observation'].update(installer_sha256='a'*64,log_sha256='d'*64,elapsed_seconds=86460,
-            sample_count=1442,max_gap_seconds=60,candidate_unchanged=True,boot_unchanged=True,services_healthy=True)
+            sample_count=1442,max_gap_seconds=60,candidate_unchanged=True,boot_unchanged=True,services_healthy=True,probes_healthy=True)
         return value
 
     def test_each_stable_specific_gate_is_required(self):
@@ -57,7 +57,7 @@ class GateTests(unittest.TestCase):
 
     def test_stable_rejects_wrong_candidate_missing_or_discontinuous_observation(self):
         for field,bad in [('installer_sha256','b'*64),('log_sha256',''),('candidate_unchanged',False),
-                          ('boot_unchanged',False),('services_healthy',False),('elapsed_seconds',86399),
+                          ('boot_unchanged',False),('services_healthy',False),('probes_healthy',False),('elapsed_seconds',86399),
                           ('elapsed_seconds',90000),
                           ('elapsed_seconds',float('nan')),('max_gap_seconds',151),('sample_count',2)]:
             value=self.stable();value['observation'][field]=bad

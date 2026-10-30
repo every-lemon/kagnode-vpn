@@ -44,7 +44,7 @@ def verify(record, version, digest, artifacts=None):
             raise ValueError('Observation must identify the exact installed candidate.')
         if not re.fullmatch(r'[a-f0-9]{64}',str(observation.get('log_sha256',''))):
             raise ValueError('Observation log digest is missing.')
-        for field in ('candidate_unchanged','boot_unchanged','services_healthy'):
+        for field in ('candidate_unchanged','boot_unchanged','services_healthy','probes_healthy'):
             if observation.get(field) is not True:
                 raise ValueError('Observation failed: '+field)
         for field in ('elapsed_seconds','max_gap_seconds'):
