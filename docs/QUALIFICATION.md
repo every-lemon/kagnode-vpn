@@ -5,8 +5,9 @@ follow [stable testing](STABLE_TESTING.md) and `qualification/4.0.0.json`. Histo
 RC evidence below is retained for traceability. Stable publication requires the
 exact final artifacts and a completed, reviewed 24-hour observation.
 
-Stable candidate CI `41044124999` on commit `c945ac3` passed all **308 tests**
-without skips on Ubuntu 24.04. These include the private-download authorization
+Stable candidate CI `41046121460` on commit `3814f54` passed all **312 tests**
+without skips on Ubuntu 24.04. CI and release jobs reject skipped tests, expected
+failures and empty discovery. These include the private-download authorization
 race regression, bounded individual-service readiness checks, rollback despite failed
 diagnostic collection, populated deployed-worker routes, Ubuntu IPsec diagnostic
 parsing, and strict artifact/observation qualification. CI's installer, updater
@@ -56,8 +57,29 @@ Stable candidate evidence recorded on 30 October 2026:
 - Through the actual installed broker and worker, queued IKEv2 export, all 15
   populated authenticated routes, native Apple MIME delivery, single-use token
   rejection, queued diagnostics and the Owner-only redacted report passed.
-- A separate fresh Ubuntu installation rehearsal is still running. Its result
-  will be added only after verification finishes.
+- A pristine Ubuntu 24.04 amd64 installation passed using the final installer's
+  maintained setup functions, with synthetic owner/MFA, network and AdGuard wizard
+  inputs. This was not an interactive-main run. The wizard fixture initially used
+  loopback and was correctly denied by the LAN firewall; submitting through LAN
+  succeeded without changing product code or firewall rules. The initial state
+  had no users, devices, delivery tokens or WireGuard peers, only the ungrouped
+  group and one enrolled fixture Owner. Fresh trust, unchanged netplan and native
+  Ubuntu Libreswan 4.14 passed verification. Setup checkpoints persisted and
+  replayed idempotently; security-update, maintenance and watchdog timers were
+  enabled and active, with the manual UTC reboot default.
+- Fresh native WireGuard, IKEv2 and L2TP identities were created. Apple mobileconfig,
+  Android sswan and encrypted PKCS#12 validated against the generated certificate.
+  The installed broker then passed queued export, all 15 populated authenticated
+  HTTP routes, native Apple MIME and single-use delivery, diagnostics and the
+  Owner-only report. Identity, client and administrator password/MFA hashes stayed
+  unchanged through these operations. These are server-native checks; real external
+  client connectivity is the separate iPad evidence above.
+
+The disposable VMs ran serially with 1 GiB file-backed guest RAM, a 1536 MiB host
+memory hard cap and a guard stopping only the test below 2 GiB host headroom. The
+fresh VM used two software-emulated vCPUs. Minimum host headroom was 5883 MiB,
+with no OOM events. Both VMs shut down cleanly; original backing disks verified
+unchanged. No other workspace job was stopped.
 
 The qualifying observation started **30 October 2026 at 10:56:27 UTC** on the exact
 final installer. Earliest completion is **31 October at 10:56:27 UTC**. Its dedicated

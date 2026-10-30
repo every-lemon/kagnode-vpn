@@ -9,7 +9,7 @@
   "checks": {
     "automated": {
       "passed": true,
-      "evidence": "GitHub Ubuntu 24.04 CI 41044124999 on commit c945ac3 passed all 308 tests without skips. All three CI payload hashes match the final signed artifacts byte-for-byte. Coverage includes native encrypted ESP/rekey/revocation, MFA/RBAC, concurrent VPD claims, private-download revocation, bounded update readiness/rollback, 15 populated deployed-worker routes, safe error logs, Ubuntu text/JSON IPsec diagnostics, and exact-artifact/live-probe observation gates."
+      "evidence": "GitHub Ubuntu 24.04 CI 41046121460 on commit 3814f54 passed all 312 tests without skips. All three CI payload hashes match the final signed artifacts byte-for-byte. Coverage includes native encrypted ESP/rekey/revocation, MFA/RBAC, concurrent VPD claims, private-download revocation, bounded update readiness/rollback, 15 populated deployed-worker routes, safe error logs, Ubuntu text/JSON IPsec diagnostics, and exact-artifact/live-probe observation gates. CI and release jobs now reject skipped tests, expected failures and empty discovery."
     },
     "deployed_reset": {
       "passed": true,
@@ -20,8 +20,8 @@
       "evidence": "An isolated Ubuntu 24.04 VM began with the published beta.2 runtime and retained native clients, trust and an MFA-enrolled fixture owner. After a deliberate interruption and cold boot, the exact final 95764a2f updater completed recovery. All eight services, the archived updater digest, trust/client/owner-MFA hashes, AdGuard, IPsec and Ubuntu networking passed independent postchecks. Private evidence: final-recovery-postcheck.log."
     },
     "native_protocols": {
-      "passed": false,
-      "evidence": "Pending verification for the exact 4.0.0 stable candidate; historical RC evidence remains separate."
+      "passed": true,
+      "evidence": "On the pristine Ubuntu 24.04 amd64 installation using the exact final setup, real WireGuard, IKEv2 and L2TP identities were created through the native engines. Apple mobileconfig, Android sswan and password-protected PKCS#12 validated against the generated certificate; native VPD rejected a second claim. This proves native configuration/export, not an external connection for every protocol. Actual encrypted traffic, policy enforcement, rekey, revocation and plaintext rejection passed the native CI tests; separate real iPad IKEv2 connectivity evidence is recorded under apple_import and external_ikev2. Final installed broker export, all 15 populated HTTP routes, native MIME/single-use delivery, diagnostics and Owner-only report also passed. Trust/client/administrator password-MFA hashes remained unchanged. Private evidence: stable-fresh-20261030/fresh-native.log."
     },
     "apple_import": {
       "passed": true,
@@ -32,8 +32,8 @@
       "evidence": "On 30 October 2026 the user confirmed VPN and websites work before and after sleep on an iPad connected to a phone hotspot using mobile data with phone Wi-Fi off. Home Wi-Fi/reconnection also passed. Later UI/helper/diagnostic-only changes preserved the native engine, policy, client credentials and profile bytes. Final server checks confirmed an authenticated SA and bidirectional traffic on LAN; the external-network evidence is the explicit user test, not a simultaneous WAN capture."
     },
     "fresh_install": {
-      "passed": false,
-      "evidence": "Pending verification for the exact 4.0.0 stable candidate; historical RC evidence remains separate."
+      "passed": true,
+      "evidence": "A pristine Ubuntu Server 24.04 amd64 VM verified the final signed artifacts, then completed the final installer setup functions with synthetic owner/MFA, fixed-network and AdGuard wizard inputs. This was not an interactive-main run. The wizard fixture initially used loopback and was correctly denied by the LAN firewall; a LAN submission succeeded without product or firewall changes. Final checks passed: empty users/devices/tokens, only the ungrouped group, one enrolled fixture Owner, zero WireGuard peers, fresh trust, unchanged netplan and native /usr/sbin/ipsec Libreswan 4.14. Setup checkpoints persisted and replayed idempotently; APT/security maintenance/watchdog timers were enabled and active, with manual UTC reboot defaults. Private evidence: stable-fresh-20261030/fresh-resume.log. Guest RAM was 1 GiB under a 1536 MiB host hard cap and a 2 GiB headroom guard."
     },
     "rc_upgrade": {
       "passed": true,

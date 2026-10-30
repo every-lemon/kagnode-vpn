@@ -12,9 +12,11 @@
   without exposing request contents or exception messages.
 - Recognize authenticated IPsec sessions in Ubuntu's text and JSON kernel output.
 - Bind stable qualification to the exact release artifacts and completed observation.
+- Reject skipped tests, expected failures and empty discovery in CI and release jobs.
 
-Live deployment, independent-network testing and 24-hour observation remain required.
-No stable tag or release is published until those checks pass.
+Live deployment, independent-network testing and fresh-install/upgrade checks passed.
+The 24-hour observation is running; no stable tag or release is published before
+its complete results are reviewed. See `docs/QUALIFICATION.md`.
 
 ## 4.0.0-rc.1 — candidate, unpublished
 
