@@ -1,15 +1,15 @@
 {
   "version": "4.0.0",
-  "installer_sha256": "7f1cb8f9532504d0db9814c3463e4f4be375b2bbf7ec6a51eeaa1025cf115c71",
+  "installer_sha256": "4007a58edd413c4ea2259b0533d45eb5fcac6589319ad2d39925052254711923",
   "artifacts": {
-    "setup.sh": "7f1cb8f9532504d0db9814c3463e4f4be375b2bbf7ec6a51eeaa1025cf115c71",
-    "update.sh": "674f972005e63a39e72c3e53d4af5a33420aa0cc5a4a5e2850f083d830f8cf3c",
-    "vpn_4.0.0_amd64.deb": "1f140ebc1844bc5ac721240c64117b581706f94b6eefbd253887b2621a1dab3a"
+    "setup.sh": "4007a58edd413c4ea2259b0533d45eb5fcac6589319ad2d39925052254711923",
+    "update.sh": "95764a2f0ff1431360ea9bf340d8dcc66586c77fee0ee7a11d17127c85741ca5",
+    "vpn_4.0.0_amd64.deb": "a69faf6a3b72c4830ba91d03bb8f39d92a7a0a42d297e4789b85f4a281a53b5c"
   },
   "checks": {
     "automated": {
       "passed": false,
-      "evidence": "Pending verification of the revised updater with bounded service readiness. The first live attempt restored prior code safely after probing WireGuard during an ordered restart; private identities, MFA and AdGuard settings remained unchanged. Application installer and package bytes are unchanged."
+      "evidence": "Pending final-build verification after populated-worker dependency and Ubuntu kernel-output diagnostic fixes. Prior candidate results are retained privately. User confirmed live owner/MFA, repaired management pages, Wi-Fi VPN internet/reconnect and independent mobile-data hotspot internet/sleep-wake; these are historical until final deployment checks pass."
     },
     "deployed_reset": {
       "passed": true,
@@ -37,24 +37,24 @@
     },
     "rc_upgrade": {
       "passed": false,
-      "evidence": "Pending verification of the revised updater with bounded service readiness. The first live attempt restored prior code safely after probing WireGuard during an ordered restart; private identities, MFA and AdGuard settings remained unchanged. Application installer and package bytes are unchanged."
+      "evidence": "Pending final-build verification after populated-worker dependency and Ubuntu kernel-output diagnostic fixes. Prior candidate results are retained privately. User confirmed live owner/MFA, repaired management pages, Wi-Fi VPN internet/reconnect and independent mobile-data hotspot internet/sleep-wake; these are historical until final deployment checks pass."
     },
     "interrupted_update": {
       "passed": false,
-      "evidence": "Pending verification of the revised updater with bounded service readiness. The first live attempt restored prior code safely after probing WireGuard during an ordered restart; private identities, MFA and AdGuard settings remained unchanged. Application installer and package bytes are unchanged."
+      "evidence": "Pending final-build verification after populated-worker dependency and Ubuntu kernel-output diagnostic fixes. Prior candidate results are retained privately. User confirmed live owner/MFA, repaired management pages, Wi-Fi VPN internet/reconnect and independent mobile-data hotspot internet/sleep-wake; these are historical until final deployment checks pass."
     },
     "package_lifecycle": {
       "passed": false,
-      "evidence": "Pending verification for the exact 4.0.0 stable candidate; historical RC evidence remains separate."
+      "evidence": "Pending final-build verification after populated-worker dependency and Ubuntu kernel-output diagnostic fixes. Prior candidate results are retained privately. User confirmed live owner/MFA, repaired management pages, Wi-Fi VPN internet/reconnect and independent mobile-data hotspot internet/sleep-wake; these are historical until final deployment checks pass."
     },
     "web_usability": {
-      "passed": true,
-      "evidence": "Exact generated 4.0.0 runtime passed 12 visual pages and 33 routes across desktop1440/iPad820/mobile375, three synthetic MFA logins, form preservation during polling, desktop profile selection preservation, zero overflow/CSP/page errors. Private stable-web/results.json records a 512MiB cap, no OOM and minimum host available7446MiB. These are headless browser checks, not real-iPad/WAN evidence."
+      "passed": false,
+      "evidence": "Pending final-build verification after populated-worker dependency and Ubuntu kernel-output diagnostic fixes. Prior candidate results are retained privately. User confirmed live owner/MFA, repaired management pages, Wi-Fi VPN internet/reconnect and independent mobile-data hotspot internet/sleep-wake; these are historical until final deployment checks pass."
     }
   },
   "observation": {
     "passed": false,
-    "installer_sha256": "7f1cb8f9532504d0db9814c3463e4f4be375b2bbf7ec6a51eeaa1025cf115c71",
+    "installer_sha256": "4007a58edd413c4ea2259b0533d45eb5fcac6589319ad2d39925052254711923",
     "log_sha256": "",
     "started_at": "",
     "finished_at": "",

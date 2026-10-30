@@ -166,7 +166,7 @@ class DiagnosticTests(unittest.TestCase):
     def test_ike_observation_requires_current_boot_identity_and_exact_spi(self):
         self.add_session('ikev2',reqid=7,spi=42)
         def runner(args,timeout):
-            if args[:4]==['ip','-j','xfrm','state']:return subprocess.CompletedProcess(args,0,json.dumps([{'reqid':7,'spi':'0x2a'}]),'')
+            if args[:4]==['ip','-j','xfrm','state']:return subprocess.CompletedProcess(args,0,json.dumps([{'reqid':7,'spi':'0x2a','proto':'esp','dst':'192.168.0.8'}]),'')
             return self.runner(args,timeout)
         result=diagnostics.collect(m,self.backend,self.ident,runner=runner)
         self.assertEqual(next(c for c in result['checks'] if c['id']=='session-ikev2')['status'],'pass')
@@ -176,7 +176,40 @@ class DiagnosticTests(unittest.TestCase):
         with self.backend.repo.connect() as db:db.execute("UPDATE policy_sessions SET data=json_set(data,'$.spi',42,'$.boot','old-boot')")
         result=diagnostics.collect(m,self.backend,self.ident,runner=runner)
         self.assertEqual(next(c for c in result['checks'] if c['id']=='session-ikev2')['status'],'unknown')
+        with self.backend.repo.connect() as db:db.execute("UPDATE policy_sessions SET data=json_set(data,'$.boot',?,'$.identity','different-device')",(Path('/proc/sys/kernel/random/boot_id').read_text().strip(),))
+        result=diagnostics.collect(m,self.backend,self.ident,runner=runner)
+        self.assertEqual(next(c for c in result['checks'] if c['id']=='session-ikev2')['status'],'unknown')
 
+    def test_ike_json_and_ubuntu_text_require_exact_inbound_esp_selectors(self):
+        self.add_session('ikev2',reqid=7,spi=42)
+        for encoding in ('json','text'):
+            for changes,expected in (({},'pass'),({'dst':'8.8.8.8'},'pass'),({'dst':'203.0.113.7'},'unknown'),
+                                     ({'spi':'0x2b'},'unknown'),({'reqid':8},'unknown'),({'proto':'ah'},'unknown')):
+                item={'src':'203.0.113.7','dst':'192.168.0.8','proto':'esp','spi':'0x2a','reqid':7,**changes}
+                if encoding=='json':output=json.dumps([item|{'auth':'PRIVATE_XFRM_KEY'}])
+                else:output=('src {src} dst {dst}\n\tproto {proto} spi {spi} reqid {reqid} mode tunnel\n'
+                             '\tauth-trunc hmac(sha256) PRIVATE_XFRM_KEY 128\n').format(**item)
+                def runner(args,timeout):
+                    self.assertLessEqual(timeout,3)
+                    if args[:4]==['ip','-j','xfrm','state']:return subprocess.CompletedProcess(args,0,output,'')
+                    return self.runner(args,timeout)
+                with self.subTest(encoding=encoding,changes=changes):
+                    report=diagnostics.collect(m,self.backend,self.ident,runner=runner)
+                    self.assertEqual(next(c for c in report['checks'] if c['id']=='session-ikev2')['status'],expected)
+                    self.assertNotIn('PRIVATE_XFRM_KEY',json.dumps(report))
+                    self.assertNotIn('203.0.113.7',json.dumps(report))
+
+    def test_ike_malformed_output_and_separate_states_never_match(self):
+        self.add_session('ikev2',reqid=7,spi=42)
+        for output in ('{}','[null]', '[{"dst":{},"proto":"esp"}]', 'private unexpected output',
+                       'src 203.0.113.7 dst 192.168.0.8\n proto esp spi 0x2b reqid 7\n'
+                       'src 192.168.0.8 dst 203.0.113.7\n proto esp spi 0x2a reqid 7\n'):
+            def runner(args,timeout):
+                if args[:4]==['ip','-j','xfrm','state']:return subprocess.CompletedProcess(args,0,output,'')
+                return self.runner(args,timeout)
+            with self.subTest(output=output):
+                report=diagnostics.collect(m,self.backend,self.ident,runner=runner)
+                self.assertEqual(next(c for c in report['checks'] if c['id']=='session-ikev2')['status'],'unknown')
     def test_ppp_reused_interface_does_not_claim_session(self):
         self.add_session('l2tp',interface='ppp9',ifindex=20)
         def runner(args,timeout):

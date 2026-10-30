@@ -8,6 +8,9 @@
   private attachments, preventing a concurrent disable/demotion from leaking profiles.
 - Wait for all managed services to become ready under one bounded deadline, including
   ordered WireGuard restarts; keep rollback running even if diagnostic collection fails.
+- Deploy all populated-page worker dependencies and record unexpected web errors
+  without exposing request contents or exception messages.
+- Recognize authenticated IPsec sessions in Ubuntu's text and JSON kernel output.
 - Bind stable qualification to the exact release artifacts and completed observation.
 
 Live deployment, independent-network testing and 24-hour observation remain required.

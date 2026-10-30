@@ -170,6 +170,29 @@ def collect(manager, backend=None, device='', runner=probe):
     return report
 
 
+def _inbound_esp(output, state):
+    """Read only selectors; Ubuntu 24.04 may return text despite ip's -j flag."""
+    destinations={state.get('lan'),state.get('public')}-{None,''}
+    selectors=set()
+    def keep(destination, protocol, reqid, spi):
+        if destination not in destinations or protocol!='esp':return
+        try:
+            reqid=int(reqid);spi=int(str(spi),0)
+            if 0<reqid<2**32 and 0<spi<2**32:selectors.add((reqid,spi))
+        except (TypeError,ValueError):pass
+    try:
+        rows=json.loads(output)
+    except ValueError:
+        for block in re.split(r'(?m)(?=^src )',output):
+            destination=re.search(r'^src \S+ dst (\S+)',block)
+            identifier=re.search(r'\bproto esp spi (0x[0-9a-fA-F]+) reqid ([0-9]+)\b',block)
+            if destination and identifier:keep(destination[1],'esp',identifier[2],identifier[1])
+    else:
+        for item in rows if isinstance(rows,list) else ():
+            if isinstance(item,dict):keep(item.get('dst'),item.get('proto'),item.get('reqid'),item.get('spi'))
+    return selectors
+
+
 def _observe(manager, backend, record, device, run, add):
     """Use current kernel identity evidence, never an assigned address alone."""
     state = manager.load()
@@ -196,7 +219,7 @@ def _observe(manager, backend, record, device, run, add):
                 if protocol == 'ikev2':
                     result = run(['ip', '-j', 'xfrm', 'state'])
                     try:
-                        observed = any(int(item.get('reqid', 0)) == row['reqid'] and int(str(item.get('spi', '0')), 0) == row['spi'] for item in json.loads(result.stdout)) if result else False
+                        observed = (row['reqid'],row['spi']) in _inbound_esp(result.stdout,state) if result else False
                     except (ValueError, KeyError, TypeError): pass
                 elif re.fullmatch(r'ppp[0-9]+', row.get('interface', '')):
                     result = run(['ip', '-j', 'link', 'show', 'dev', row['interface']])

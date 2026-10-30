@@ -35,6 +35,9 @@ VENV = Path('/usr/lib/vpn/venv')
 TMPFILES = Path('/etc/tmpfiles.d/vpn.conf')
 TMPFILES_RULES = 'f /run/xtables.lock 0600 root root -\n'
 MAX_RPC = 8 * 1024**2
+# Explicit dependencies of the unprivileged loose-file HTTP workers. The root
+# broker's embedded module loader must not hide missing worker dependencies.
+WORKER_MODULES = ('vpn_auth','vpn_admin','vpn_dashboard','vpn_brand','vpn_business')
 
 
 from vpn_auth import AuthError as WebError
@@ -926,6 +929,25 @@ def manager_html(data, message='', **options):
     return render(data, message, document=page, **options)
 
 
+def log_worker_error(exc, role, route):
+    """Journal unexpected failures without exception text or request contents."""
+    routes={'/','/health','/access','/download','/profile.mobileconfig','/manage'}
+    routes.update('/manage/'+name for name in ('status','devices','device','users','jobs','batches','delivery','system','search','groups','administrators','audit','action','login','logout','file','enroll'))
+    route=route if route in routes else 'other'
+    role=role if role in ('management','downloads') else 'other'
+    error=type(exc).__name__
+    if not re.fullmatch(r'[A-Za-z_][A-Za-z0-9_]{0,63}',error):error='Exception'
+    location='unknown:0'
+    trace=exc.__traceback__
+    while trace is not None:
+        filename=Path(trace.tb_frame.f_code.co_filename).name
+        if filename in {'web.py','vpn_web.py',*(name+'.py' for name in WORKER_MODULES)}:
+            location=filename+':'+str(trace.tb_lineno)
+        trace=trace.tb_next
+    try:print('VPN worker error role='+role+' route='+route+' type='+error+' location='+location,file=sys.stderr,flush=True)
+    except OSError:pass
+
+
 class Application:
     def __init__(self, config, role, rpc_call=rpc, public=PUBLIC):
         if role not in ('downloads', 'management'):
@@ -1129,10 +1151,13 @@ class Application:
                             body = body.replace(b'<div data-result-slot></div>',card.encode(),1)
             else:
                 status, body = '404 Not Found', page('Not found', '<p>No route is available here.</p>')
-        except (OSError, ConnectionError, TimeoutError):
+        except (OSError, ConnectionError, TimeoutError) as exc:
+            log_worker_error(exc,self.role,locals().get('path',''))
             status, body = '503 Service Unavailable', page('Service unavailable', '<p>Backend unavailable. Run sudo vpn doctor for diagnostics.</p>')
             headers.append(('Retry-After', '3'))
         except Exception as exc:
+            if not isinstance(exc,(WebError,ValueError,RuntimeError)):
+                log_worker_error(exc,self.role,locals().get('path',''))
             status = '403 Forbidden'
             message = str(exc) if isinstance(exc, (WebError,ValueError,RuntimeError)) else 'Operation unavailable. Review local diagnostics.'
             body = page('Request unavailable','<p>'+html.escape(message)+'</p>')
@@ -1314,10 +1339,8 @@ def enable(backend, module_source, download_user=None, open_manager=True):
     code_dir.mkdir(parents=True, exist_ok=True, mode=0o755)
     code_dir.chmod(0o755)
     m.atomic(code_dir / 'web.py', module_source, 0o644)
-    m.atomic(code_dir / 'vpn_admin.py', m.module_source('vpn_admin'), 0o644)
-    m.atomic(code_dir / 'vpn_dashboard.py', m.module_source('vpn_dashboard'), 0o644)
-    m.atomic(code_dir / 'vpn_auth.py', m.module_source('vpn_auth'), 0o644)
-    m.atomic(code_dir / 'vpn_brand.py', m.module_source('vpn_brand'), 0o644)
+    for name in WORKER_MODULES:
+        m.atomic(code_dir / (name+'.py'), m.module_source(name), 0o644)
     PUBLIC.mkdir(parents=True, exist_ok=True, mode=0o755)
     PUBLIC.chmod(0o755)
     cert_dir = PUBLIC / 'certs'
