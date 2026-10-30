@@ -4,7 +4,7 @@
   "artifacts": {
     "setup.sh": "7f1cb8f9532504d0db9814c3463e4f4be375b2bbf7ec6a51eeaa1025cf115c71",
     "update.sh": "85b9ae8484f9261c282e15c5012fe445150a6e6e04526eb916075a9e77bac475",
-    "vpn_4.0.0_amd64.deb": "67aaafdadda33116244808b650c2ab9ced7a27d3ca49447c95e1d3900361b487"
+    "vpn_4.0.0_amd64.deb": "1f140ebc1844bc5ac721240c64117b581706f94b6eefbd253887b2621a1dab3a"
   },
   "checks": {
     "automated": {

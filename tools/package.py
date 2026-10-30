@@ -36,6 +36,9 @@ for path in root.rglob('*'):
  if path.is_dir():path.chmod(0o755)
  elif path.name in ('vpn','postinst','prerm','setup.sh'):path.chmod(0o755)
  else:path.chmod(0o644)
+# rglob excludes the root directory. Signing normally uses umask 077; never
+# carry that private build-directory mode into the package's filesystem root.
+root.chmod(0o755)
 # Release evidence can be committed after qualification without changing package
 # bytes. Neither checkout timestamps nor the evidence commit's date are payload.
 # A fixed archive epoch keeps identical source trees reproducible across builders.

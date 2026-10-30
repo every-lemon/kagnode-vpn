@@ -21,11 +21,15 @@ class PackageReproducibilityTests(unittest.TestCase):
             (root/'tools').mkdir();shutil.copy2(ROOT/'tools/package.py',root/'tools/package.py')
             env={key:value for key,value in os.environ.items() if key!='VPN_RELEASE_KEY'}
             env['SOURCE_DATE_EPOCH']='1800000000'
-            def build():
-                subprocess.run([sys.executable,str(root/'tools/package.py')],check=True,capture_output=True,env=env)
+            def build(mask):
+                subprocess.run([sys.executable,str(root/'tools/package.py')],check=True,capture_output=True,env=env,umask=mask)
                 return hashlib.sha256(next((root/'dist').glob('*.deb')).read_bytes()).hexdigest()
-            before=build()
+            before=build(0o077)
+            archive=subprocess.run(['dpkg-deb','--fsys-tarfile',str(next((root/'dist').glob('*.deb')))],check=True,capture_output=True).stdout
+            import io,tarfile
+            with tarfile.open(fileobj=io.BytesIO(archive)) as tar:
+                self.assertEqual(tar.getmember('.').mode,0o755)
             for path in root.rglob('*'):
                 if path.is_file() and 'dist' not in path.parts:os.utime(path,(1900000000,1900000000))
             env['SOURCE_DATE_EPOCH']='2000000000'
-            self.assertEqual(before,build())
+            self.assertEqual(before,build(0o022))
