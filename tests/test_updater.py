@@ -28,11 +28,16 @@ def release_payload(version):
 
 class FakeUpdater(u.Updater):
     def __init__(self,*args,fail=None,**kw):super().__init__(*args,**kw);self.calls=[];self.fail=fail
-    def command(self,args,check=True):
+    def command(self,args,check=True,timeout=600):
         self.calls.append(list(map(str,args)))
         if self.fail and self.fail in list(map(str,args)) and check:raise u.UpdateError('simulated deployment failure')
         return types.SimpleNamespace(returncode=0)
     def diagnostics(self,phase):(self.run_dir/(phase+'-journal.log')).write_text('captured before rollback')
+
+class Clock:
+    def __init__(self):self.now=0
+    def __call__(self):return self.now
+    def sleep(self,seconds):self.now+=seconds
 
 class UpdaterTests(unittest.TestCase):
     def setUp(self):
@@ -80,16 +85,49 @@ class UpdaterTests(unittest.TestCase):
         for service in ('vpn-control','vpn-management','vpn-downloads','vpn-firewall','ipsec','xl2tpd','wg-quick@wg0','AdGuardHome'):
             with self.subTest(service=service):
                 update=self.updater();original=update.command
-                def probe(args,check=True):
+                clock=Clock()
+                def probe(args,check=True,timeout=600):
                     if args==['systemctl','is-active','--quiet',service]:
-                        raise u.UpdateError('required service is inactive')
-                    return original(args,check)
+                        return types.SimpleNamespace(returncode=3)
+                    return original(args,check,timeout)
                 update.command=probe
-                with self.assertRaisesRegex(u.UpdateError,'inactive'):self.execute(update)
+                with patch.object(u.time,'monotonic',clock),patch.object(u.time,'sleep',clock.sleep):
+                    with self.assertRaisesRegex(u.UpdateError,'did not become active'):self.execute(update)
+                self.assertEqual(clock.now,60)
                 self.assertEqual((self.code/'manage.py').read_text(),'old runtime')
                 self.assertTrue(self.source.exists());self.assert_private_unchanged()
                 self.assertFalse((self.base/'updates'/('update-'+PAYLOAD['version']+'.sh')).exists())
                 self.assertEqual(json.loads((update.run_dir/'journal.json').read_text())['status'],'code-restored')
+    def test_ordered_service_restart_can_finish_before_update_commits(self):
+        update=self.updater();original=update.command;clock=Clock();probes=[]
+        def probe(args,check=True,timeout=600):
+            if args[:3]==['systemctl','is-active','--quiet']:
+                probes.append((args[-1],clock.now,check,timeout))
+                if args[-1]=='wg-quick@wg0' and clock.now<2:return types.SimpleNamespace(returncode=3)
+            return original(args,check,timeout)
+        update.command=probe
+        with patch.object(u.time,'monotonic',clock),patch.object(u.time,'sleep',clock.sleep):self.execute(update)
+        self.assertEqual(clock.now,2);self.assert_private_unchanged()
+        self.assertEqual((self.code/'VERSION').read_text(),PAYLOAD['version']+'\n')
+        self.assertFalse(self.source.exists())
+        self.assertEqual(len({service for service,when,_,_ in probes if when==2}),8)
+        self.assertTrue(all(not check and 0<timeout<=3 for _,_,check,timeout in probes))
+        self.assertFalse(any(c[:2]==['systemctl','restart'] for c in update.calls))
+    def test_hung_service_probes_share_deadline_and_diagnostics_cannot_block_rollback(self):
+        update=self.updater();original=update.command;clock=Clock();timeouts=[]
+        def probe(args,check=True,timeout=600):
+            if args[:3]==['systemctl','is-active','--quiet']:
+                timeouts.append(timeout);clock.sleep(timeout)
+                raise subprocess.TimeoutExpired(args,timeout)
+            return original(args,check,timeout)
+        update.command=probe
+        with patch.object(u.time,'monotonic',clock),patch.object(u.time,'sleep',clock.sleep),patch.object(update,'diagnostics',side_effect=OSError('journal unavailable')),contextlib.redirect_stderr(io.StringIO()):
+            with self.assertRaisesRegex(u.UpdateError,'did not become active'):self.execute(update)
+        self.assertEqual(clock.now,60)
+        self.assertTrue(all(0<timeout<=3 for timeout in timeouts))
+        self.assertEqual((self.code/'manage.py').read_text(),'old runtime')
+        self.assertTrue(self.source.exists());self.assert_private_unchanged()
+        self.assertEqual(json.loads((update.run_dir/'journal.json').read_text())['status'],'code-restored')
     def test_diagnostic_timeout_cannot_prevent_rollback(self):
         update=self.updater(fail='refresh-web')
         with patch.object(update,'diagnostics',side_effect=subprocess.TimeoutExpired('journalctl',20)),contextlib.redirect_stderr(io.StringIO()):
@@ -103,12 +141,12 @@ class UpdaterTests(unittest.TestCase):
         owned=units/'vpn-management.service';owned.write_text('old service')
         unrelated=units/'other.service';unrelated.write_text('unrelated')
         update=self.updater();original=update.command
-        def fail(args,check=True):
+        def fail(args,check=True,timeout=600):
             if 'refresh-web' in args and check:
                 firewall.write_text('new firewall');owned.write_text('new service')
                 (units/'vpn-new.service').write_text('new unit')
                 raise u.UpdateError('deployment failed')
-            return original(args,check)
+            return original(args,check,timeout)
         update.command=fail
         with self.assertRaisesRegex(u.UpdateError,'deployment'):self.execute(update)
         self.assertEqual(firewall.read_text(),'old scoped firewall')
@@ -128,8 +166,8 @@ class UpdaterTests(unittest.TestCase):
                 self.assertFalse(update.calls)
     def test_modified_source_not_removed(self):
         update=self.updater();original=update.command
-        def modify(args,check=True):
-            result=original(args,check)
+        def modify(args,check=True,timeout=600):
+            result=original(args,check,timeout)
             if 'refresh-web' in args:self.source.write_text('changed')
             return result
         update.command=modify

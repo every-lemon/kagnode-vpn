@@ -3,17 +3,17 @@
   "installer_sha256": "7f1cb8f9532504d0db9814c3463e4f4be375b2bbf7ec6a51eeaa1025cf115c71",
   "artifacts": {
     "setup.sh": "7f1cb8f9532504d0db9814c3463e4f4be375b2bbf7ec6a51eeaa1025cf115c71",
-    "update.sh": "85b9ae8484f9261c282e15c5012fe445150a6e6e04526eb916075a9e77bac475",
+    "update.sh": "674f972005e63a39e72c3e53d4af5a33420aa0cc5a4a5e2850f083d830f8cf3c",
     "vpn_4.0.0_amd64.deb": "1f140ebc1844bc5ac721240c64117b581706f94b6eefbd253887b2621a1dab3a"
   },
   "checks": {
     "automated": {
-      "passed": true,
-      "evidence": "GitHub Ubuntu 24.04 CI 41036108462 on commit 16531b4 passed all 300 tests without skips. Includes encrypted ESP/rekey/revocation, mandatory MFA and RBAC, concurrent VPD claims, download authorization revocation, all-service updater failure and diagnostic-timeout rollback, exact-artifact qualification and reproducible packages; syntax, secret scan and package inspection also passed."
+      "passed": false,
+      "evidence": "Pending verification of the revised updater with bounded service readiness. The first live attempt restored prior code safely after probing WireGuard during an ordered restart; private identities, MFA and AdGuard settings remained unchanged. Application installer and package bytes are unchanged."
     },
     "deployed_reset": {
-      "passed": false,
-      "evidence": "Pending verification for the exact 4.0.0 stable candidate; historical RC evidence remains separate."
+      "passed": true,
+      "evidence": "Reviewed prior disposable legacy reset/interruption/reboot/resume and approved live 3.x fresh start documented in docs/QUALIFICATION.md. Stable src/vpn_setup.py, vpn_auth.py, vpn_native.py and vpn_policy.py are unchanged from deployed SPI-fix commit 7f94452. Historical reset evidence is retained for these unchanged mechanisms; it is not substituted for stable fresh-install or interrupted-updater gates."
     },
     "beta2_upgrade": {
       "passed": false,
@@ -37,19 +37,19 @@
     },
     "rc_upgrade": {
       "passed": false,
-      "evidence": "Pending verification for the exact 4.0.0 stable candidate; historical RC evidence remains separate."
+      "evidence": "Pending verification of the revised updater with bounded service readiness. The first live attempt restored prior code safely after probing WireGuard during an ordered restart; private identities, MFA and AdGuard settings remained unchanged. Application installer and package bytes are unchanged."
     },
     "interrupted_update": {
       "passed": false,
-      "evidence": "Pending verification for the exact 4.0.0 stable candidate; historical RC evidence remains separate."
+      "evidence": "Pending verification of the revised updater with bounded service readiness. The first live attempt restored prior code safely after probing WireGuard during an ordered restart; private identities, MFA and AdGuard settings remained unchanged. Application installer and package bytes are unchanged."
     },
     "package_lifecycle": {
       "passed": false,
       "evidence": "Pending verification for the exact 4.0.0 stable candidate; historical RC evidence remains separate."
     },
     "web_usability": {
-      "passed": false,
-      "evidence": "Pending verification for the exact 4.0.0 stable candidate; historical RC evidence remains separate."
+      "passed": true,
+      "evidence": "Exact generated 4.0.0 runtime passed 12 visual pages and 33 routes across desktop1440/iPad820/mobile375, three synthetic MFA logins, form preservation during polling, desktop profile selection preservation, zero overflow/CSP/page errors. Private stable-web/results.json records a 512MiB cap, no OOM and minimum host available7446MiB. These are headless browser checks, not real-iPad/WAN evidence."
     }
   },
   "observation": {

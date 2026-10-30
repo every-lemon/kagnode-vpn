@@ -5,11 +5,20 @@ follow [stable testing](STABLE_TESTING.md) and `qualification/4.0.0.json`. Histo
 RC evidence below is retained for traceability and does not prove this candidate
 passed live or independent-network checks. No qualifying observation is running.
 
-Stable candidate CI `41036108462` on commit `16531b4` passed all **300 tests**
+Stable candidate CI `41037512094` on commit `3574bd9` passed all **300 tests**
 without skips on Ubuntu 24.04. These include the private-download authorization
 race regression, individual-service update verification, rollback despite failed
-diagnostic collection, reproducible packages and strict stable-artifact gates.
-These automated results do not establish completed live qualification.
+diagnostic collection, and strict artifact qualification. CI's installer, updater
+and Debian package hashes match the signed local candidate byte-for-byte. A
+cross-builder comparison caught the package archive root inheriting the builder's
+umask; explicit directory permissions and an umask regression corrected it.
+
+The exact compiled 4.0.0 browser runtime passed 12 visual pages and 33 route checks
+across desktop, iPad-sized and mobile viewports, with three synthetic MFA logins,
+no overflow/CSP/page errors and edited forms preserved during polling. Desktop
+profile selections also remained intact. The 512 MiB cap reclaimed memory without
+OOM; minimum builder memory available was 7446 MiB. Screenshots and raw evidence
+remain private fixtures, not real-device evidence. Live qualification remains pending.
 
 ## Historical RC and beta evidence
 

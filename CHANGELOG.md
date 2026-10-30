@@ -6,8 +6,8 @@
 - Preserve existing 4.x clients, trust material, administrator MFA and AdGuard settings.
 - Recheck administrator authorization under the native lock before returning
   private attachments, preventing a concurrent disable/demotion from leaking profiles.
-- Require all managed services to pass updater verification and keep rollback running
-  even when collecting failure diagnostics fails.
+- Wait for all managed services to become ready under one bounded deadline, including
+  ordered WireGuard restarts; keep rollback running even if diagnostic collection fails.
 - Bind stable qualification to the exact release artifacts and completed observation.
 
 Live deployment, independent-network testing and 24-hour observation remain required.

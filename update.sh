@@ -4573,12 +4573,35 @@ class Updater:
                 try:fcntl.lockf(stream,fcntl.LOCK_EX|fcntl.LOCK_NB)
                 except BlockingIOError:raise UpdateError('Ubuntu package maintenance is running; retry later.') from None
             yield
-    def command(self,args,check=True):
+    def command(self,args,check=True,timeout=600):
         with (self.run_dir/'commands.log').open('a') as log:
             log.write('\n$ '+shlex.join(map(str,args))+'\n');log.flush()
-            result=subprocess.run(list(map(str,args)),stdout=log,stderr=log,timeout=600)
+            result=subprocess.run(list(map(str,args)),stdout=log,stderr=log,timeout=timeout)
         if check and result.returncode:raise UpdateError('Command failed; see private commands.log: '+str(args[0]))
         return result
+    def wait_services(self,timeout=60):
+        # A requested unit may finish before its ordered PartOf dependents.
+        # Check every unit independently under one deadline; never restart here.
+        services=('vpn-control','vpn-management','vpn-downloads','vpn-firewall','ipsec','xl2tpd','wg-quick@wg0','AdGuardHome')
+        deadline=time.monotonic()+timeout
+        pending=list(services)
+        while time.monotonic()<deadline:
+            pending=[]
+            for index,service in enumerate(services):
+                remaining=deadline-time.monotonic()
+                if remaining<=0:
+                    pending.extend(services[index:])
+                    break
+                try:
+                    result=self.command(['systemctl','is-active','--quiet',service],check=False,timeout=min(3,remaining))
+                    ready=result.returncode==0
+                except subprocess.TimeoutExpired:
+                    ready=False
+                if not ready:pending.append(service)
+            if not pending:return
+            remaining=deadline-time.monotonic()
+            if remaining>0:time.sleep(min(.5,remaining))
+        raise UpdateError('Required services did not become active within '+str(timeout)+' seconds: '+', '.join(pending)+'. See private commands.log.')
     def diagnostics(self,phase):
         for command in (['journalctl','-u','vpn-control','-u','vpn-downloads','-u','vpn-management','--since','15 minutes ago','-n','150','--no-pager'],['systemctl','status','vpn-control','vpn-downloads','vpn-management','--no-pager']):
             with (self.run_dir/(phase+'-'+command[0]+'.log')).open('w') as log:
@@ -4632,10 +4655,7 @@ class Updater:
                 # Package removal stops these timers. A verified application
                 # redeployment must also resume monitoring and maintenance.
                 self.command(['systemctl','start','vpn-watchdog.timer','vpn-maintenance.timer'])
-                # systemctl is-active with several units succeeds when ANY unit
-                # is active. Verify each required service before committing.
-                for service in ('vpn-control','vpn-management','vpn-downloads','vpn-firewall','ipsec','xl2tpd','wg-quick@wg0','AdGuardHome'):
-                    self.command(['systemctl','is-active','--quiet',service])
+                self.wait_services()
                 journal['status']='complete';atomic(self.run_dir/'journal.json',json.dumps(journal))
             except BaseException:
                 # A stalled journal or unavailable systemd must not prevent
