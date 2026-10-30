@@ -35,3 +35,4 @@ jobs:
           python3 tools/package.py
           dpkg-deb --info dist/*.deb
           dpkg-deb --contents dist/*.deb
+          sha256sum dist/*.deb dist/setup.sh dist/update.sh

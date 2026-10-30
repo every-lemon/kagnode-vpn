@@ -5,6 +5,12 @@ follow [stable testing](STABLE_TESTING.md) and `qualification/4.0.0.json`. Histo
 RC evidence below is retained for traceability and does not prove this candidate
 passed live or independent-network checks. No qualifying observation is running.
 
+Stable candidate CI `41036108462` on commit `16531b4` passed all **300 tests**
+without skips on Ubuntu 24.04. These include the private-download authorization
+race regression, individual-service update verification, rollback despite failed
+diagnostic collection, reproducible packages and strict stable-artifact gates.
+These automated results do not establish completed live qualification.
+
 ## Historical RC and beta evidence
 
 RC.1 remained unpublished. Its historical gates are tracked in

@@ -8,8 +8,8 @@
   },
   "checks": {
     "automated": {
-      "passed": false,
-      "evidence": "Pending verification for the exact 4.0.0 stable candidate; historical RC evidence remains separate."
+      "passed": true,
+      "evidence": "GitHub Ubuntu 24.04 CI 41036108462 on commit 16531b4 passed all 300 tests without skips. Includes encrypted ESP/rekey/revocation, mandatory MFA and RBAC, concurrent VPD claims, download authorization revocation, all-service updater failure and diagnostic-timeout rollback, exact-artifact qualification and reproducible packages; syntax, secret scan and package inspection also passed."
     },
     "deployed_reset": {
       "passed": false,
