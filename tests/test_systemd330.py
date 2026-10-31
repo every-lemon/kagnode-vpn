@@ -25,7 +25,7 @@ class SystemdTests(unittest.TestCase):
         units=Path('/run/systemd/system');firewall=name+'-firewall.service';tunnel=name+'-tunnel.service'
         source=(ROOT/'src/installer.sh').read_text()
         dependency=source.split("<<'WG_SERVICE'\n",1)[1].split('\nWG_SERVICE',1)[0]
-        dependency=dependency.replace('vpn-firewall.service',firewall).replace('/usr/bin/python3 /usr/lib/vpn/manage.py policy-apply','/bin/true')
+        dependency=dependency.replace('vpn-firewall.service',firewall).replace('/usr/bin/python3 /opt/kagnode/vpn/manage.py policy-apply','/bin/true')
         base='[Service]\nType=oneshot\nRemainAfterExit=yes\nExecStart=/bin/true\n'
         def call(*args):return subprocess.run(['systemctl',*args],check=True,capture_output=True,text=True,timeout=30).stdout.strip()
         try:

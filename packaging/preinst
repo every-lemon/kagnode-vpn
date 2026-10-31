@@ -1,0 +1,8 @@
+#!/bin/sh
+set -eu
+for legacy in /usr/lib/vpn /usr/libexec/vpn /etc/vpn /var/lib/vpn /var/log/vpn; do
+  if [ -e "$legacy" ] && [ ! -L "$legacy" ]; then
+    echo "Legacy path $legacy requires the reviewed path migration before installing this release." >&2
+    exit 1
+  fi
+done

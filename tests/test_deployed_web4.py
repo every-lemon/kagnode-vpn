@@ -14,7 +14,7 @@ class DeployedWorkerTests(unittest.TestCase):
             root=Path(folder)
             for name in WORKER_MODULES:
                 (root/(name+'.py')).write_bytes((ROOT/'src'/(name+'.py')).read_bytes())
-            text=(ROOT/'src/vpn_web.py').read_text().replace("PUBLIC = Path('/var/lib/vpn/public')",'PUBLIC = Path('+repr(str(root))+')')
+            text=(ROOT/'src/vpn_web.py').read_text().replace("PUBLIC = Path('/var/lib/kagnode/vpn/public')",'PUBLIC = Path('+repr(str(root))+')')
             (root/'web.py').write_text(text)
             (root/'public.json').write_text(json.dumps({'lan':'127.0.0.1','public':'8.8.8.8','endpoint':'vpn.example.test'}))
             harness='''import io,os,sys,types,runpy

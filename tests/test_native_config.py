@@ -23,7 +23,7 @@ class NativeConfigurationTests(unittest.TestCase):
         executable = shutil.which('ipsec')
         with tempfile.TemporaryDirectory(prefix='vpn-native-parser-') as tmp:
             root = Path(tmp)
-            base, etc = root / 'var/lib/vpn', root / 'etc'
+            base, etc = root / 'var/lib/kagnode/vpn', root / 'etc'
             base.mkdir(parents=True)
             nss = root / 'var/lib/ipsec/nss'
             nss.mkdir(parents=True)

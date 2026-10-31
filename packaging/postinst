@@ -2,7 +2,7 @@
 set -e
 # Install code only. No trust reset, account enrollment or unrelated package removal.
 if [ "$1" = configure ]; then
-  install -d -m 0711 /var/lib/vpn
-  install -d -m 0700 /etc/vpn /var/log/vpn
+  install -d -m 0711 /var/lib/kagnode/vpn
+  install -d -m 0700 /etc/kagnode/vpn /var/log/kagnode/vpn
   if [ -d /run/systemd/system ]; then systemctl daemon-reload; fi
 fi

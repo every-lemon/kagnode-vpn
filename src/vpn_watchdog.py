@@ -287,14 +287,14 @@ Description=VPN local health and recovery watchdog
 After=network-online.target
 [Service]
 Type=oneshot
-ExecStart=/usr/bin/python3 /usr/lib/vpn/manage.py watchdog-tick
+ExecStart=/usr/bin/python3 /opt/kagnode/vpn/manage.py watchdog-tick
 TimeoutStartSec=180
 UMask=0077
 Nice=10
 NoNewPrivileges=yes
 PrivateTmp=yes
 ProtectSystem=strict
-ReadWritePaths=/var/lib/vpn /var/log/vpn /run -/var/lib/dpkg/lock-frontend -/var/lib/dpkg/lock -/var/lib/apt/lists/lock -/var/cache/apt/archives/lock
+ReadWritePaths=/var/lib/kagnode/vpn /var/log/kagnode/vpn /run -/var/lib/dpkg/lock-frontend -/var/lib/dpkg/lock -/var/lib/apt/lists/lock -/var/cache/apt/archives/lock
 ''', 'vpn-watchdog.timer': '''[Unit]
 Description=Check VPN local health every 30 seconds
 [Timer]

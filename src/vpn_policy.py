@@ -399,18 +399,18 @@ def install(backend):
     wrapper = '''#!/bin/bash
 set -euo pipefail
 @@ROUTING_HELPER@@ "$@"
-exec /usr/bin/python3 /usr/libexec/vpn/hook.py ikev2
+exec /usr/bin/python3 /opt/kagnode/vpn/helpers/hook.py ikev2
 '''
-    code_dir = Path('/usr/libexec/vpn')
+    code_dir = Path('/opt/kagnode/vpn/helpers')
     code_dir.mkdir(parents=True, exist_ok=True, mode=0o755)
     code_dir.chmod(0o755)
     m.atomic(code_dir / 'hook.py', HOOK_CLIENT, 0o644)
     m.atomic(code_dir / 'ipsec-updown.sh', wrapper.replace('@@ROUTING_HELPER@@', shlex.quote(str(routing_helper))), 0o755)
     conf = backend.db / 'ikev2.conf'
     text = conf.read_text()
-    desired = '  leftupdown=/usr/libexec/vpn/ipsec-updown.sh'
+    desired = '  leftupdown=/opt/kagnode/vpn/helpers/ipsec-updown.sh'
     existing = re.findall(r'^\s*leftupdown\s*=\s*(.*)$', text, re.M)
-    if existing and any(value not in ('/var/lib/vpn/ipsec-updown.sh', '/usr/libexec/vpn/ipsec-updown.sh') for value in existing):
+    if existing and any(value not in ('/var/lib/kagnode/vpn/ipsec-updown.sh', '/opt/kagnode/vpn/helpers/ipsec-updown.sh') for value in existing):
         raise RuntimeError('Custom IKEv2 updown hook found. It was preserved; policy installation stopped.')
     if existing:
         updated = re.sub(r'^\s*leftupdown\s*=.*$', desired, text, flags=re.M)
@@ -448,4 +448,4 @@ def configure_ppp(backend):
     # Identity + live interface-generation groups prevent spoofing and name/address reuse.
     m = backend.m
     for name, mode in [('ip-up.d', 'up'), ('ip-down.d', 'down')]:
-        m.atomic(m.ETC / 'ppp' / name / 'vpn', '#!/bin/sh\nexec /usr/bin/python3 /usr/libexec/vpn/hook.py l2tp ' + mode + '\n', 0o700)
+        m.atomic(m.ETC / 'ppp' / name / 'vpn', '#!/bin/sh\nexec /usr/bin/python3 /opt/kagnode/vpn/helpers/hook.py l2tp ' + mode + '\n', 0o700)

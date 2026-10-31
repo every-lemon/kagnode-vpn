@@ -9,17 +9,19 @@ version=(ROOT/'VERSION').read_text().strip()
 subprocess.run([sys.executable,str(ROOT/'build.py')],check=True)
 root=ROOT/'build/package'
 if root.exists():shutil.rmtree(root)
-for d in ('DEBIAN','usr/bin','usr/lib/vpn','usr/libexec/vpn','usr/share/doc/vpn'):(root/d).mkdir(parents=True)
+for d in ('DEBIAN','usr/bin','opt/kagnode/vpn','opt/kagnode/vpn/helpers','usr/share/doc/vpn'):(root/d).mkdir(parents=True)
 setup=(ROOT/'setup.sh').read_text()
 manager=setup.split("<<'PY_RUNTIME'\n",1)[1].split('\nPY_RUNTIME\n',1)[0]
-(root/'usr/lib/vpn/manage.py').write_text(manager+'\n')
-shutil.copy2(ROOT/'VERSION',root/'usr/lib/vpn/VERSION')
-if (ROOT/'release-key.pem').exists():shutil.copy2(ROOT/'release-key.pem',root/'usr/lib/vpn/release-key.pem')
-shutil.copy2(ROOT/'setup.sh',root/'usr/libexec/vpn/setup.sh')
+(root/'opt/kagnode/vpn/manage.py').write_text(manager+'\n')
+shutil.copy2(ROOT/'VERSION',root/'opt/kagnode/vpn/VERSION')
+if (ROOT/'release-key.pem').exists():shutil.copy2(ROOT/'release-key.pem',root/'opt/kagnode/vpn/release-key.pem')
+shutil.copy2(ROOT/'setup.sh',root/'opt/kagnode/vpn/helpers/setup.sh')
 shutil.copy2(ROOT/'packaging/vpn',root/'usr/bin/vpn')
-for name in ('postinst','prerm'):shutil.copy2(ROOT/'packaging'/name,root/'DEBIAN'/name)
-for name in ('LICENSE','THIRD_PARTY_NOTICES.md','README.md'):
+for name in ('preinst','postinst','prerm'):shutil.copy2(ROOT/'packaging'/name,root/'DEBIAN'/name)
+for name in ('LICENSE','THIRD_PARTY_NOTICES.md','README.md','BRAND-POLICY.md','PATHS.md'):
  if (ROOT/name).exists():shutil.copy2(ROOT/name,root/'usr/share/doc/vpn'/name)
+shutil.copytree(ROOT/'LICENSES',root/'usr/share/doc/vpn/LICENSES')
+shutil.copy2(ROOT/'scripts/migrate-paths.py',root/'usr/share/doc/vpn/migrate-paths.py')
 shutil.copytree(ROOT/'assets',root/'usr/share/doc/vpn/assets')
 (root/'DEBIAN/control').write_text(f'''Package: vpn
 Version: {debian(version)}
@@ -34,7 +36,7 @@ Description: KagNode Open source VPN server
 ''')
 for path in root.rglob('*'):
  if path.is_dir():path.chmod(0o755)
- elif path.name in ('vpn','postinst','prerm','setup.sh'):path.chmod(0o755)
+ elif path.name in ('vpn','preinst','postinst','prerm','setup.sh'):path.chmod(0o755)
  else:path.chmod(0o644)
 # rglob excludes the root directory. Signing normally uses umask 077; never
 # carry that private build-directory mode into the package's filesystem root.

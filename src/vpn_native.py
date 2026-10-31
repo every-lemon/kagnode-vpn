@@ -38,7 +38,7 @@ def generate_certificate(manager,args,data=None):
     except subprocess.TimeoutExpired as exc:
         def text(value):return (value.decode(errors='replace') if isinstance(value,bytes) else value or '')[-8192:]
         record.update(status='timed-out',stdout=text(exc.stdout),stderr=text(exc.stderr),finished=time.time())
-        raise RuntimeError('Certificate generation timed out. Inspect /var/lib/vpn/native-setup.json; rerun setup to resume existing trust material.') from None
+        raise RuntimeError('Certificate generation timed out. Inspect /var/lib/kagnode/vpn/native-setup.json; rerun setup to resume existing trust material.') from None
     except Exception as exc:
         record.update(status='failed',error=str(exc)[:1000],finished=time.time());raise
     finally:manager.atomic(stage,json.dumps(record,indent=2))

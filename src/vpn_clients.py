@@ -309,7 +309,7 @@ class Backend:
 check_libreswan() { ipsec_ver=$(ipsec --version); printf '%s' \"$ipsec_ver\" | grep -qi libreswan || exit 1; }
 export_client_config() { :; }
 print_client_info() { :; }
-get_export_dir() { export_dir=/var/lib/vpn/; export_to_home_dir=0; }
+get_export_dir() { export_dir=/var/lib/kagnode/vpn/; export_to_home_dir=0; }
 '''
         env = os.environ.copy()
         for key in ('SUDO_USER', 'SUDO_UID', 'SUDO_GID', 'VPN_PROTECT_CONFIG', 'IKEV2_CONFIG_PASSWORD'):

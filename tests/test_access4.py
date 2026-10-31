@@ -15,7 +15,7 @@ from vpn_backend import Repository
 class AccessTests(unittest.TestCase):
     def setUp(self):
         self.temp=tempfile.TemporaryDirectory();self.addCleanup(self.temp.cleanup)
-        self.root=Path(self.temp.name);self.base=self.root/'var/lib/vpn';self.base.mkdir(parents=True)
+        self.root=Path(self.temp.name);self.base=self.root/'var/lib/kagnode/vpn';self.base.mkdir(parents=True)
         self.state={'lan':'192.168.0.8','lan_net':'192.168.0.0/24','admin_devices':['device-one']}
         self.saved=None;self.calls=[]
         def save(value):self.saved=copy.deepcopy(value)
@@ -50,7 +50,7 @@ class AccessTests(unittest.TestCase):
 class RepairTests(unittest.TestCase):
     def setUp(self):
         self.temp=tempfile.TemporaryDirectory();self.addCleanup(self.temp.cleanup)
-        self.root=Path(self.temp.name);self.base=self.root/'var/lib/vpn';self.base.mkdir(parents=True)
+        self.root=Path(self.temp.name);self.base=self.root/'var/lib/kagnode/vpn';self.base.mkdir(parents=True)
         self.repo=Repository(self.base);self.calls=[];self.active=False
         def command(args,**kwargs):
             self.calls.append(args)

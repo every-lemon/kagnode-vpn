@@ -40,7 +40,7 @@ def fresh_start(manager, confirmation, root=Path('/')):
 def _fresh_start(manager,root):
     root=Path(root)
     legacy=root/'root/vpn-stack'; source=legacy/'state.json'
-    marker=root/'var/lib/vpn/reset-progress.json'
+    marker=root/'var/lib/kagnode/vpn/reset-progress.json'
     if marker.exists():
         state=json.loads(marker.read_text())
         if state['stage']=='complete': return state

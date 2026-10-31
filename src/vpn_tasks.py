@@ -93,7 +93,7 @@ Description=VPN owner-authorized system maintenance task
 After=network-online.target
 [Service]
 Type=oneshot
-ExecStart=/usr/bin/python3 /usr/lib/vpn/manage.py system-task
+ExecStart=/usr/bin/python3 /opt/kagnode/vpn/manage.py system-task
 UMask=0077
 PrivateTmp=yes
 LimitCORE=0

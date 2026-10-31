@@ -5,7 +5,7 @@ set -Eeuo pipefail
 umask 077
 export PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
 VERSION=@@VERSION@@
-BASE=/var/lib/vpn
+BASE=/var/lib/kagnode/vpn
 LOG=''
 LAST=Start
 STEP=0
@@ -66,7 +66,7 @@ No argument: arrow-key menu for installation, users/devices, web access and diag
 Ubuntu Server 24.04 on a physical server or VM; containers unsupported.
 --demo previews terminal progress without root or system changes.
 --check-adguard diagnoses service, DNS and admin sockets without reinstalling.
-Private files and logs: /var/lib/vpn/
+Private files and logs: /var/lib/kagnode/vpn/
 Router: forward UDP 500, 4500, 51820 to your server's stable LAN IPv4.
 Never forward 53, 1701, 3000, or 8080. IPv4 full tunnel only.
 HELP
@@ -105,7 +105,7 @@ import json, sys
 if json.load(open(sys.argv[1])).get('stage') != 'complete': raise SystemExit(1)
 RESET_CHECK
   fi
-  if [[ ! -f /etc/vpn/state.json && ! -f $BASE/reset-progress.json ]]; then
+  if [[ ! -f /etc/kagnode/vpn/state.json && ! -f $BASE/reset-progress.json ]]; then
     [[ ! -e /etc/wireguard/wg0.conf && ! -e /etc/ipsec.conf && ! -e /opt/AdGuardHome/AdGuardHome ]] || die 'Existing unmanaged VPN or AdGuard installation found. Use a fresh server.'
     if command -v iptables >/dev/null; then
       local rules
@@ -132,7 +132,7 @@ check_resources() {
 preflight() {
   check_resources
   ip -4 route show default | grep -q '^default ' || die 'No default IPv4 route.'
-  [[ -f /etc/vpn/state.json || ! -e /etc/ipsec.conf ]] || die 'Unmanaged IPsec configuration.'
+  [[ -f /etc/kagnode/vpn/state.json || ! -e /etc/ipsec.conf ]] || die 'Unmanaged IPsec configuration.'
   modprobe wireguard
   modprobe ppp_generic
   [[ -c /dev/ppp ]] || die 'PPP device unavailable.'
@@ -172,35 +172,35 @@ ui_input() {
   printf '%s\n' "${answer:-${2:-}}"
 }
 install_runtime() {
-  install -d -m 755 /usr/lib/vpn /usr/libexec/vpn
-  install -d -m 700 /etc/vpn /var/log/vpn
+  install -d -m 755 /opt/kagnode/vpn /opt/kagnode/vpn/helpers
+  install -d -m 700 /etc/kagnode/vpn /var/log/kagnode/vpn
   install -d -m 711 "$BASE"
   install -d -m 700 "$BASE/upstream" "$BASE/clients" "$BASE/backups"
-    printf '%s\n' "$VERSION" > /usr/lib/vpn/VERSION
+    printf '%s\n' "$VERSION" > /opt/kagnode/vpn/VERSION
   install -d -m 755 /usr/bin
   cat > /usr/bin/vpn <<'VPN_LAUNCHER'
 #!/bin/sh
 case "${1:-}" in
-  setup) shift; exec /bin/bash /usr/libexec/vpn/setup.sh "$@" ;;
-  update) shift; exec /usr/bin/python3 /usr/lib/vpn/manage.py update "$@" ;;
-  --version) exec cat /usr/lib/vpn/VERSION ;;
-  *) exec /usr/bin/python3 /usr/lib/vpn/manage.py "$@" ;;
+  setup) shift; exec /bin/bash /opt/kagnode/vpn/helpers/setup.sh "$@" ;;
+  update) shift; exec /usr/bin/python3 /opt/kagnode/vpn/manage.py update "$@" ;;
+  --version) exec cat /opt/kagnode/vpn/VERSION ;;
+  *) exec /usr/bin/python3 /opt/kagnode/vpn/manage.py "$@" ;;
 esac
 VPN_LAUNCHER
   chmod 755 /usr/bin/vpn
   if [[ ! -L "$BASE/logs" ]]; then
-    if [[ -d "$BASE/logs" ]]; then mv "$BASE/logs" "/var/log/vpn/imported-$(date +%s%N)"; fi
-    ln -s /var/log/vpn "$BASE/logs"
+    if [[ -d "$BASE/logs" ]]; then mv "$BASE/logs" "/var/log/kagnode/vpn/imported-$(date +%s%N)"; fi
+    ln -s /var/log/kagnode/vpn "$BASE/logs"
   fi
-  cat > /usr/lib/vpn/release-key.pem <<'RELEASE_PUBLIC_KEY'
+  cat > /opt/kagnode/vpn/release-key.pem <<'RELEASE_PUBLIC_KEY'
 @@RELEASE_KEY@@
 RELEASE_PUBLIC_KEY
-  chmod 644 /usr/lib/vpn/release-key.pem
-  emit_manager > "/usr/lib/vpn/manage.py.new"
-  chmod 700 "/usr/lib/vpn/manage.py.new"
-  mv -f "/usr/lib/vpn/manage.py.new" "/usr/lib/vpn/manage.py"
-  if [[ $(readlink -f -- "${BASH_SOURCE[0]}") != "/usr/libexec/vpn/setup.sh" ]]; then
-    install -m 700 -- "${BASH_SOURCE[0]}" "/usr/libexec/vpn/setup.sh"
+  chmod 644 /opt/kagnode/vpn/release-key.pem
+  emit_manager > "/opt/kagnode/vpn/manage.py.new"
+  chmod 700 "/opt/kagnode/vpn/manage.py.new"
+  mv -f "/opt/kagnode/vpn/manage.py.new" "/opt/kagnode/vpn/manage.py"
+  if [[ $(readlink -f -- "${BASH_SOURCE[0]}") != "/opt/kagnode/vpn/helpers/setup.sh" ]]; then
+    install -m 700 -- "${BASH_SOURCE[0]}" "/opt/kagnode/vpn/helpers/setup.sh"
   fi
 }
 network_wizard() {
@@ -219,7 +219,7 @@ network_wizard() {
   say "  Detected public IPv4: $public"
   endpoint=$(ui_input "Public VPN hostname or IPv4" "$public")
   endpoint=${endpoint:-$public}
-  python3 "/usr/lib/vpn/manage.py" configure "$address" "$cidr" "$iface" "$endpoint" "$public"
+  python3 "/opt/kagnode/vpn/manage.py" configure "$address" "$cidr" "$iface" "$endpoint" "$public"
 }
 backup_network() {
   local f
@@ -231,7 +231,7 @@ backup_network() {
   sysctl -w net.ipv4.ip_forward=1
 }
 check_dns_port() {
-  python3 "/usr/lib/vpn/manage.py" prepare-dns
+  python3 "/opt/kagnode/vpn/manage.py" prepare-dns
 }
 
 install_adguard() {
@@ -243,7 +243,7 @@ install_adguard() {
   systemctl enable --now AdGuardHome
 }
 adguard_ok() {
-  python3 "/usr/lib/vpn/manage.py" check-adguard
+  python3 "/opt/kagnode/vpn/manage.py" check-adguard
 }
 
 adguard_wizard() {
@@ -263,9 +263,9 @@ adguard_wizard() {
   completed 'Manual AdGuard setup and DNS verified'
 }
 prepare_upstream() { :; }
-install_ipsec() { python3 /usr/lib/vpn/manage.py native-install; }
+install_ipsec() { python3 /opt/kagnode/vpn/manage.py native-install; }
 write_firewall() {
-  cat > "/usr/libexec/vpn/firewall.sh" <<FIREWALL
+  cat > "/opt/kagnode/vpn/helpers/firewall.sh" <<FIREWALL
 #!/usr/bin/env bash
 set -euo pipefail
 export PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
@@ -288,7 +288,7 @@ while iptables -w -C FORWARD -j VPNSTACK-FWD 2>/dev/null; do iptables -w -D FORW
 iptables -w -I INPUT 4 -j VPNSTACK-IN
 iptables -w -I FORWARD 4 -j VPNSTACK-FWD
 iptables -w -A VPNSTACK-IN -m conntrack --ctstate INVALID -j DROP
-if [[ -f /var/lib/vpn/ssh-disabled ]]; then
+if [[ -f /var/lib/kagnode/vpn/ssh-disabled ]]; then
   iptables -w -A VPNSTACK-IN -p tcp --dport 22 -j DROP
 fi
 # Fail closed until authenticated grants are rebuilt by the backend.
@@ -308,8 +308,8 @@ done
 iptables -w -A VPNSTACK-IN -i lo -s $LAN_IP -d $LAN_IP -p tcp --dport 9001 -j ACCEPT
 iptables -w -A VPNSTACK-IN -i $IFACE -s $LAN_NET -d $LAN_IP -p tcp --dport 9001 -j ACCEPT
 # Trust only an explicitly configured HTTPS proxy; validate before shell use.
-if [[ -f /etc/vpn/state.json ]]; then
-  admin_proxy=\$(/usr/bin/python3 -c 'import json,ipaddress; s=json.load(open("/etc/vpn/state.json")); print(str(ipaddress.IPv4Address(s["trusted_proxy"])) if s.get("admin_mode")=="https" and s.get("trusted_proxy") else "")')
+if [[ -f /etc/kagnode/vpn/state.json ]]; then
+  admin_proxy=\$(/usr/bin/python3 -c 'import json,ipaddress; s=json.load(open("/etc/kagnode/vpn/state.json")); print(str(ipaddress.IPv4Address(s["trusted_proxy"])) if s.get("admin_mode")=="https" and s.get("trusted_proxy") else "")')
   if [[ -n \$admin_proxy ]]; then iptables -w -A VPNSTACK-IN -s "\$admin_proxy" -d $LAN_IP -p tcp --dport 9001 -j ACCEPT; fi
 fi
 iptables -w -A VPNSTACK-IN -p tcp --dport 9001 -j DROP
@@ -328,7 +328,7 @@ done
 iptables -w -A VPNSTACK-IN -i lo -j RETURN
 iptables -w -A VPNSTACK-IN -p udp --dport 53 -j DROP
 iptables -w -A VPNSTACK-IN -p tcp --dport 53 -j DROP
-if [[ -f /var/lib/vpn/web-enabled ]]; then
+if [[ -f /var/lib/kagnode/vpn/web-enabled ]]; then
   iptables -w -A VPNSTACK-IN -p tcp --dport 9000 -j ACCEPT
 else
   iptables -w -A VPNSTACK-IN -p tcp --dport 9000 -j DROP
@@ -351,7 +351,7 @@ if [[ -f /proc/net/if_inet6 ]]; then
   ip6tables -w -F VPNSTACK6-IN
   while ip6tables -w -C INPUT -j VPNSTACK6-IN 2>/dev/null; do ip6tables -w -D INPUT -j VPNSTACK6-IN; done
   ip6tables -w -I INPUT 1 -j VPNSTACK6-IN
-  if [[ -f /var/lib/vpn/ssh-disabled ]]; then
+  if [[ -f /var/lib/kagnode/vpn/ssh-disabled ]]; then
     ip6tables -w -A VPNSTACK6-IN -p tcp --dport 22 -j DROP
   fi
   ip6tables -w -A VPNSTACK6-IN -i lo -j RETURN
@@ -361,7 +361,7 @@ if [[ -f /proc/net/if_inet6 ]]; then
   ip6tables -w -A VPNSTACK6-IN -j RETURN
 fi
 sysctl -q -w net.ipv4.ip_forward=1
-if [[ -f "$BASE/policy-installed" ]]; then /usr/bin/python3 "/usr/lib/vpn/manage.py" policy-apply; fi
+if [[ -f "$BASE/policy-installed" ]]; then /usr/bin/python3 "/opt/kagnode/vpn/manage.py" policy-apply; fi
 # Remove the barrier only after managed policies have been applied and verified.
 for source in $WG_NET $IKE_NET $L2TP_NET; do
   for chain in INPUT FORWARD; do
@@ -369,7 +369,7 @@ for source in $WG_NET $IKE_NET $L2TP_NET; do
   done
 done
 FIREWALL
-  chmod 700 "/usr/libexec/vpn/firewall.sh"
+  chmod 700 "/opt/kagnode/vpn/helpers/firewall.sh"
   cat > /etc/systemd/system/vpn-firewall.service <<'FIREWALL_SERVICE'
 [Unit]
 Description=KagNode VPN DNS guards and WireGuard forwarding
@@ -378,7 +378,7 @@ Before=wg-quick@wg0.service
 Wants=network-pre.target
 [Service]
 Type=oneshot
-ExecStart=/usr/libexec/vpn/firewall.sh
+ExecStart=/opt/kagnode/vpn/helpers/firewall.sh
 RemainAfterExit=yes
 [Install]
 WantedBy=multi-user.target
@@ -390,7 +390,7 @@ Requires=vpn-firewall.service
 PartOf=vpn-firewall.service
 After=vpn-firewall.service load-iptables-rules.service netfilter-persistent.service
 [Service]
-ExecStartPost=/usr/bin/python3 /usr/lib/vpn/manage.py policy-apply
+ExecStartPost=/usr/bin/python3 /opt/kagnode/vpn/manage.py policy-apply
 WG_SERVICE
   systemctl daemon-reload
   systemctl enable vpn-firewall
@@ -466,10 +466,10 @@ install_stack() {
   LOG=$(mktemp "$BASE/logs/install-$(date +%Y%m%d-%H%M%S)-XXXXXX.log")
   STEP=0; TOTAL=19
   header
-  if [[ ! -f /etc/vpn/state.json ]]; then network_wizard; fi
+  if [[ ! -f /etc/kagnode/vpn/state.json ]]; then network_wizard; fi
   # State is root-only; values are generated with shlex.quote, never user shell text.
   local state_values
-  state_values=$(python3 "/usr/lib/vpn/manage.py" state-shell)
+  state_values=$(python3 "/opt/kagnode/vpn/manage.py" state-shell)
   eval "$state_values"
   ip -o -4 addr show dev "$IFACE" | awk -v wanted="$LAN_IP" '{split($4,a,"/");if(a[1]==wanted)ok=1} END {exit !ok}' || die "Saved LAN address $LAN_IP is no longer on $IFACE. Restore the stable address before resuming."
   say "  LAN $LAN_IP · Endpoint $ENDPOINT · Full tunnel IPv4"
@@ -480,46 +480,46 @@ install_stack() {
   answer=$(ui_choice 'Start / resume installation?' 'no=Cancel' 'yes=Install KagNode VPN')
   [[ $answer == yes ]] || { flock -u 9; flock -u 8; return; }
   local -a apt=(env DEBIAN_FRONTEND=noninteractive APT_LISTCHANGES_FRONTEND=none NEEDRESTART_MODE=a)
-  python3 /usr/lib/vpn/manage.py setup-stage review
+  python3 /opt/kagnode/vpn/manage.py setup-stage review
   run 'Resume interrupted package configuration' "${apt[@]}" dpkg --force-confold --configure -a
   run 'Refresh Ubuntu package lists' "${apt[@]}" apt-get -qq -o DPkg::Lock::Timeout=120 update
   run 'Upgrade installed Ubuntu packages' "${apt[@]}" apt-get -y -qq -o DPkg::Lock::Timeout=120 -o Dpkg::Options::=--force-confold upgrade
   run 'Install networking and profile utilities' "${apt[@]}" apt-get -y -qq -o DPkg::Lock::Timeout=120 install ca-certificates curl wget iproute2 iptables wireguard-tools qrencode dnsutils python3 procps kmod ppp openssl util-linux libnss3-tools python3-venv
-  python3 /usr/lib/vpn/manage.py setup-stage packages
+  python3 /opt/kagnode/vpn/manage.py setup-stage packages
   run 'Verify resources and kernel networking' preflight
-  python3 /usr/lib/vpn/manage.py owner-enroll
-  python3 /usr/lib/vpn/manage.py setup-stage owner
-  python3 /usr/lib/vpn/manage.py ssh-choice
-  run 'Enable Ubuntu security updates' python3 /usr/lib/vpn/manage.py maintenance-install
+  python3 /opt/kagnode/vpn/manage.py owner-enroll
+  python3 /opt/kagnode/vpn/manage.py setup-stage owner
+  python3 /opt/kagnode/vpn/manage.py ssh-choice
+  run 'Enable Ubuntu security updates' python3 /opt/kagnode/vpn/manage.py maintenance-install
   run 'Back up settings and protect DNS/admin access' prepare_network
   run 'Free DNS port 53 and verify host resolution' check_dns_port
   run 'Install and start AdGuard Home' install_adguard
   adguard_wizard
-  python3 /usr/lib/vpn/manage.py setup-stage adguard
+  python3 /opt/kagnode/vpn/manage.py setup-stage adguard
   run 'Download and validate IPsec integration' prepare_upstream
   run 'Configure IKEv2 and L2TP/IPsec' install_ipsec
   run 'Configure persistent firewall and WireGuard' configure_vpn
-  run 'Initialize empty client registry' python3 /usr/lib/vpn/manage.py migrate-registry
-  python3 /usr/lib/vpn/manage.py setup-stage vpn
+  run 'Initialize empty client registry' python3 /opt/kagnode/vpn/manage.py migrate-registry
+  python3 /opt/kagnode/vpn/manage.py setup-stage vpn
   run 'Verify VPN services, forwarding and DNS' final_checks
-  python3 "/usr/lib/vpn/manage.py" installed
+  python3 "/opt/kagnode/vpn/manage.py" installed
   cat > "$BASE/README.txt" <<REFERENCE
 KagNode VPN $VERSION — Ubuntu Server 24.04
-Management: sudo bash /usr/libexec/vpn/setup.sh --profiles
-Status: sudo bash /usr/libexec/vpn/setup.sh --status
-Private profiles: /var/lib/vpn/clients/
+Management: sudo bash /opt/kagnode/vpn/helpers/setup.sh --profiles
+Status: sudo bash /opt/kagnode/vpn/helpers/setup.sh --status
+Private profiles: /var/lib/kagnode/vpn/clients/
 Server-side checks passed; external connections and Apple import still require device testing.
 IPv4-only: disable client IPv6 when full-tunnel privacy is needed.
 REFERENCE
-  run 'Configure authenticated LAN policy' python3 "/usr/lib/vpn/manage.py" policy-install
-  run 'Apply appliance service and kernel hardening' python3 "/usr/lib/vpn/manage.py" hardening-install
-  run 'Enable downloads and deploy web backend' python3 "/usr/lib/vpn/manage.py" refresh-web
-  run 'Enable local health and recovery watchdog' python3 "/usr/lib/vpn/manage.py" watchdog-install
-  python3 /usr/lib/vpn/manage.py setup-stage verified
+  run 'Configure authenticated LAN policy' python3 "/opt/kagnode/vpn/manage.py" policy-install
+  run 'Apply appliance service and kernel hardening' python3 "/opt/kagnode/vpn/manage.py" hardening-install
+  run 'Enable downloads and deploy web backend' python3 "/opt/kagnode/vpn/manage.py" refresh-web
+  run 'Enable local health and recovery watchdog' python3 "/opt/kagnode/vpn/manage.py" watchdog-install
+  python3 /opt/kagnode/vpn/manage.py setup-stage verified
   flock -u 9
   flock -u 8
   : # Package removal is never scheduled automatically.
-  python3 "/usr/lib/vpn/manage.py" ports | tee -a "$BASE/README.txt"
+  python3 "/opt/kagnode/vpn/manage.py" ports | tee -a "$BASE/README.txt"
   say "\n${G}  KagNode VPN installed. Open Users, devices and profiles to add users, export profiles, or see live bandwidth.${Z}"
   say "  Private installation log: $LOG"
   if [[ -f /var/run/reboot-required ]]; then say '  Ubuntu reports a reboot is required. Reboot manually, then check --status.'; fi
@@ -538,6 +538,9 @@ main() {
     *) help_msg; exit 2 ;;
   esac
   [[ $# -le 1 ]] || die 'Too many arguments.'
+  for legacy in /usr/lib/vpn /usr/libexec/vpn /etc/vpn /var/lib/vpn /var/log/vpn; do
+    [[ ! -e $legacy || -L $legacy ]] || die "Legacy path $legacy requires the reviewed scripts/migrate-paths.py migration first."
+  done
   check_platform
   ensure_ui
   command -v flock >/dev/null || die 'util-linux (flock) is required.'
@@ -554,14 +557,14 @@ DIAGNOSE
   fi
   if [[ ${1:-} == --fresh-start ]]; then
     install_runtime
-    python3 /usr/lib/vpn/manage.py fresh-start
+    python3 /opt/kagnode/vpn/manage.py fresh-start
     install_stack
     return
   fi
   if [[ ${1:-} == --install ]]; then install_stack; return; fi
   if [[ ${1:-} == --hardening-* || ${1:-} == --watchdog-* || ${1:-} == --web-password || ${1:-} == --profiles || ${1:-} == --status || ${1:-} == --web-status || ${1:-} == --reset-clients || ${1:-} == --web ]]; then
-    [[ -f /usr/lib/vpn/manage.py && -f /etc/vpn/state.json ]] || die 'Install KagNode VPN first.'
-    python3 "/usr/lib/vpn/manage.py" "${1#--}"
+    [[ -f /opt/kagnode/vpn/manage.py && -f /etc/kagnode/vpn/state.json ]] || die 'Install KagNode VPN first.'
+    python3 "/opt/kagnode/vpn/manage.py" "${1#--}"
     return
   fi
   while true; do
@@ -570,11 +573,11 @@ DIAGNOSE
     choice=$(ui_choice 'KagNode VPN · Ubuntu 24.04' '1=Install KagNode VPN' '2=Users, devices and profiles' '3=Dashboard and profile delivery' '4=Diagnostics and service status' '0=Exit') || return 0
     case $choice in
       1) if bash "${BASH_SOURCE[0]}" --install; then :; else say "  Installation stopped. See the private log above; select Install KagNode VPN to resume."; fi ;;
-      2) if [[ -f /etc/vpn/state.json && -f /usr/lib/vpn/manage.py ]] && command -v python3 >/dev/null; then
-           python3 "/usr/lib/vpn/manage.py" profiles
+      2) if [[ -f /etc/kagnode/vpn/state.json && -f /opt/kagnode/vpn/manage.py ]] && command -v python3 >/dev/null; then
+           python3 "/opt/kagnode/vpn/manage.py" profiles
          else say '  Install KagNode VPN first. Returning to the opening menu.'; fi ;;
-      3) if [[ -f /usr/lib/vpn/manage.py && -f /etc/vpn/state.json ]]; then python3 "/usr/lib/vpn/manage.py" web; else say '  Install KagNode VPN first.'; fi ;;
-      4) if [[ -f /usr/lib/vpn/manage.py && -f /etc/vpn/state.json ]]; then python3 "/usr/lib/vpn/manage.py" status; fi ;;
+      3) if [[ -f /opt/kagnode/vpn/manage.py && -f /etc/kagnode/vpn/state.json ]]; then python3 "/opt/kagnode/vpn/manage.py" web; else say '  Install KagNode VPN first.'; fi ;;
+      4) if [[ -f /opt/kagnode/vpn/manage.py && -f /etc/kagnode/vpn/state.json ]]; then python3 "/opt/kagnode/vpn/manage.py" status; fi ;;
       0) return ;;
       *) say '  Choose 1, 2 or 0.' ;;
     esac

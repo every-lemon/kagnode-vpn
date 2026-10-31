@@ -28,6 +28,8 @@ jobs:
           shellcheck -x setup.sh update.sh
           bash update.sh --verify
           python3 tools/check_secrets.py
+      - name: Path migration fixtures
+        run: python3 scripts/check-migration.py
       - name: Tests
         run: sudo .venv/bin/python tools/run_release_tests.py
       - name: Package inspection

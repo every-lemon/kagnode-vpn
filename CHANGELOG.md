@@ -1,3 +1,7 @@
+# 4.1.0-beta.1
+
+KagNode branding, project-scoped path defaults and an explicit migration tool. Source history and prior releases are retained. See PATHS.md and LICENSES/.
+
 # Changelog
 
 ## 4.0.0 — stable candidate, unpublished

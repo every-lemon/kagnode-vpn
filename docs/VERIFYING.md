@@ -1,7 +1,7 @@
 # Verify a release before installation
 
 Download the package or scripts, `manifest.json`, and `manifest.sig` from the
-same [GitHub release](https://github.com/every-lemon/vpn/releases). Use
+same [GitHub release](https://github.com/every-lemon/kagnode-vpn/releases). Use
 `release-key.pem` from a previously trusted checkout or installation; do not
 replace your trusted key with a key supplied by an unverified update.
 

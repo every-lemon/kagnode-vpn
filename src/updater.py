@@ -112,8 +112,8 @@ class Updater:
     def __init__(self,source,payload,root=Path('/'),prerelease=False):
         self.root=Path(root); self.source=Path(source).resolve(strict=True);self.payload=payload
         self.source_bytes=self.source.read_bytes()
-        self.target=payload['version'];self.base=self.path('/var/lib/vpn');self.prerelease=prerelease
-        self.code=self.path('/usr/lib/vpn');self.helpers=self.path('/usr/libexec/vpn')
+        self.target=payload['version'];self.base=self.path('/var/lib/kagnode/vpn');self.prerelease=prerelease
+        self.code=self.path('/opt/kagnode/vpn');self.helpers=self.path('/opt/kagnode/vpn/helpers')
         self.run_dir=None
     def path(self,value):return self.root/value.lstrip('/')
     @contextlib.contextmanager
@@ -164,7 +164,7 @@ class Updater:
     def run(self):
         validate_payload(self.payload)
         if '-' in self.target and not self.prerelease:raise UpdateError('Prerelease requires --prerelease. Stable selection never installs beta/RC releases.')
-        state_path=self.path('/etc/vpn/state.json')
+        state_path=self.path('/etc/kagnode/vpn/state.json')
         if not state_path.exists():raise UpdateError('No VPN 4 installation found. Use setup.sh; 3.x requires explicit --fresh-start.')
         state=json.loads(state_path.read_text())
         if state.get('version')!=4 or not state.get('installed'):raise UpdateError('Finish VPN 4 setup before updating; no legacy migration is performed.')
@@ -205,7 +205,7 @@ class Updater:
             try:
                 self.command(['systemctl','stop','vpn-management','vpn-downloads','vpn-control.service','vpn-control.socket'])
                 for path,data in paths.items():atomic(path,data,0o644 if path.name=='VERSION' else 0o700)
-                self.command(['bash','-c','set -Eeuo pipefail; source "$1"; eval "$(python3 /usr/lib/vpn/manage.py state-shell)"; write_firewall','vpn-update',self.helpers/'setup.sh'])
+                self.command(['bash','-c','set -Eeuo pipefail; source "$1"; eval "$(python3 /opt/kagnode/vpn/manage.py state-shell)"; write_firewall','vpn-update',self.helpers/'setup.sh'])
                 self.command(['python3',self.code/'manage.py','refresh-web'])
                 # Package removal stops these timers. A verified application
                 # redeployment must also resume monitoring and maintenance.

@@ -42,9 +42,9 @@ class Clock:
 class UpdaterTests(unittest.TestCase):
     def setUp(self):
         self.tmp=tempfile.TemporaryDirectory();self.addCleanup(self.tmp.cleanup);self.root=Path(self.tmp.name)
-        self.base=self.root/'var/lib/vpn';self.code=self.root/'usr/lib/vpn';self.helpers=self.root/'usr/libexec/vpn'
-        for path in (self.base,self.code,self.helpers,self.root/'etc/vpn'):path.mkdir(parents=True,exist_ok=True)
-        self.state=self.root/'etc/vpn/state.json';self.state.write_text(json.dumps({'version':4,'installed':True,'clients':{'device':{'private':'fixture'}}}))
+        self.base=self.root/'var/lib/kagnode/vpn';self.code=self.root/'opt/kagnode/vpn';self.helpers=self.root/'opt/kagnode/vpn/helpers'
+        for path in (self.base,self.code,self.helpers,self.root/'etc/kagnode/vpn'):path.mkdir(parents=True,exist_ok=True)
+        self.state=self.root/'etc/kagnode/vpn/state.json';self.state.write_text(json.dumps({'version':4,'installed':True,'clients':{'device':{'private':'fixture'}}}))
         (self.base/'backend.db').write_bytes(b'private admin MFA tokens fixture')
         (self.code/'VERSION').write_text('4.0.0-beta.1\n');(self.code/'manage.py').write_text('old runtime')
         (self.helpers/'setup.sh').write_text('old installer')
@@ -72,7 +72,7 @@ class UpdaterTests(unittest.TestCase):
         self.execute(update);self.assert_private_unchanged()
         self.assertEqual((self.code/'VERSION').read_text(),'4.0.0\n')
     def test_downgrade_refused(self):
-        (self.code/'VERSION').write_text('4.0.1')
+        (self.code/'VERSION').write_text('99.0.0')
         with self.assertRaisesRegex(u.UpdateError,'downgrade'):self.execute(self.updater())
     def test_failure_captures_journal_and_restores_code_only(self):
         update=self.updater(fail='refresh-web')

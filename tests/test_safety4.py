@@ -18,7 +18,7 @@ from vpn_maintenance import Coordinator
 class SafetyTests(unittest.TestCase):
     def setUp(self):
         self.temp=tempfile.TemporaryDirectory();self.addCleanup(self.temp.cleanup)
-        self.root=Path(self.temp.name);self.base=self.root/'var/lib/vpn';self.base.mkdir(parents=True)
+        self.root=Path(self.temp.name);self.base=self.root/'var/lib/kagnode/vpn';self.base.mkdir(parents=True)
         self.commands=[]
         def command(args,**kw):
             self.commands.append(args);return subprocess.CompletedProcess(args,0,'','')

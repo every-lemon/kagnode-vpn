@@ -26,12 +26,12 @@ import time
 from urllib.parse import parse_qs, urlencode, urlsplit
 
 SOCKET = Path('/run/vpn/control.sock')
-PUBLIC = Path('/var/lib/vpn/public')
+PUBLIC = Path('/var/lib/kagnode/vpn/public')
 ACCOUNT = 'vpn-web'
 ADMIN_ACCOUNT = 'vpn-admin'
 RPC_GROUP = 'vpn-rpc'
 # Runtime dependencies are pinned by content hashes.
-VENV = Path('/usr/lib/vpn/venv')
+VENV = Path('/opt/kagnode/vpn/venv')
 TMPFILES = Path('/etc/tmpfiles.d/vpn.conf')
 TMPFILES_RULES = 'f /run/xtables.lock 0600 root root -\n'
 MAX_RPC = 8 * 1024**2
@@ -1286,8 +1286,8 @@ Group=vpn-rpc
 RuntimeDirectory=vpn
 RuntimeDirectoryMode=0750
 RuntimeDirectoryPreserve=yes
-ExecStart=''' + python + ''' /usr/lib/vpn/manage.py web-control
-ReadWritePaths=/var/lib/vpn /var/log/vpn /etc/vpn /etc/wireguard /etc/ipsec.d -/var/lib/ipsec/nss /etc/ppp /run/vpn /run/xtables.lock -/home -/var/lib/dpkg/lock-frontend -/var/lib/dpkg/lock -/var/lib/apt/lists/lock -/var/cache/apt/archives/lock
+ExecStart=''' + python + ''' /opt/kagnode/vpn/manage.py web-control
+ReadWritePaths=/var/lib/kagnode/vpn /var/log/kagnode/vpn /etc/kagnode/vpn /etc/wireguard /etc/ipsec.d -/var/lib/ipsec/nss /etc/ppp /run/vpn /run/xtables.lock -/home -/var/lib/dpkg/lock-frontend -/var/lib/dpkg/lock -/var/lib/apt/lists/lock -/var/cache/apt/archives/lock
 ''' + common.replace('AF_INET AF_INET6 AF_UNIX', 'AF_INET AF_INET6 AF_UNIX AF_NETLINK') + service_limits() + 'CapabilityBoundingSet=CAP_NET_ADMIN CAP_DAC_OVERRIDE CAP_DAC_READ_SEARCH CAP_CHOWN CAP_FOWNER CAP_SETUID CAP_SETGID CAP_KILL CAP_AUDIT_WRITE\n'}
     for name, account, role in [('vpn-downloads', ACCOUNT, 'downloads'), ('vpn-management', ADMIN_ACCOUNT, 'management')]:
         units[name + '.service'] = '''[Unit]
@@ -1299,7 +1299,7 @@ Wants=network-online.target
 User=''' + account + '''
 Group=''' + RPC_GROUP + '''
 ProtectHome=yes
-ExecStart=''' + python + ' /usr/lib/vpn/web.py --' + role + '\n' + common + service_limits(worker=True) + 'CapabilityBoundingSet=\nAmbientCapabilities=\nProtectProc=invisible\nProcSubset=pid\nMemoryDenyWriteExecute=yes\nSystemCallFilter=@system-service\n'
+ExecStart=''' + python + ' /opt/kagnode/vpn/web.py --' + role + '\n' + common + service_limits(worker=True) + 'CapabilityBoundingSet=\nAmbientCapabilities=\nProtectProc=invisible\nProcSubset=pid\nMemoryDenyWriteExecute=yes\nSystemCallFilter=@system-service\n'
         if role == 'downloads':
             units[name + '.service'] = units[name + '.service'].replace('Requires=vpn-control.service', 'Wants=vpn-control.service vpn-control.socket')
         units[name + '.service'] += '[Install]\nWantedBy=multi-user.target\n'
@@ -1335,7 +1335,7 @@ def enable(backend, module_source, download_user=None, open_manager=True):
                     probe.bind((address, port))
             except OSError as exc:
                 raise WebError(f'Cannot bind {address}:{port}: {exc}. Existing listener was not stopped.') from None
-    code_dir = Path('/usr/lib/vpn')
+    code_dir = Path('/opt/kagnode/vpn')
     code_dir.mkdir(parents=True, exist_ok=True, mode=0o755)
     code_dir.chmod(0o755)
     m.atomic(code_dir / 'web.py', module_source, 0o644)

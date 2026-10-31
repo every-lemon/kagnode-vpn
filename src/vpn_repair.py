@@ -111,7 +111,7 @@ Description=VPN evidence-first managed fault recovery
 After=network-online.target
 [Service]
 Type=oneshot
-ExecStart=/usr/bin/python3 /usr/lib/vpn/manage.py repair-auto
+ExecStart=/usr/bin/python3 /opt/kagnode/vpn/manage.py repair-auto
 UMask=0077
 PrivateTmp=yes
 LimitCORE=0

@@ -43,9 +43,9 @@ class _ModuleLoader:
 sys.meta_path.insert(0, _ModuleLoader())
 
 
-BASE = Path('/var/lib/vpn')
+BASE = Path('/var/lib/kagnode/vpn')
 ETC = Path('/etc')
-STATE = Path('/etc/vpn/state.json')
+STATE = Path('/etc/kagnode/vpn/state.json')
 EXPORT_ROOT = BASE / 'native-exports'
 RUN = Path('/run')
 NAME = re.compile(r'[A-Za-z][A-Za-z0-9_-]{0,19}\Z')
@@ -598,7 +598,7 @@ def main():
     os.umask(0o077)
     if os.geteuid() != 0:
         raise SystemExit('Run as root.')
-    venv = Path('/usr/lib/vpn/venv/bin/python3')
+    venv = Path('/opt/kagnode/vpn/venv/bin/python3')
     if venv.exists() and Path(sys.prefix) != venv.parent.parent:
         os.execv(str(venv), [str(venv)] + sys.argv)
     op, *args = sys.argv[1:] or ['console']

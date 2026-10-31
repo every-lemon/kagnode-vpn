@@ -14,10 +14,10 @@ import sqlite3
 import time
 
 UNITS=('AdGuardHome','ipsec','xl2tpd','wg-quick@wg0','vpn-control','vpn-downloads','vpn-management','vpn-firewall')
-INSTALLER=Path('/usr/libexec/vpn/setup.sh')
+INSTALLER=Path('/opt/kagnode/vpn/helpers/setup.sh')
 NETWORK_PROBES=('dns_udp','dns_tcp','http_downloads','http_management')
 
-def network_summary(path=Path('/var/lib/vpn/public/public.json')):
+def network_summary(path=Path('/var/lib/kagnode/vpn/public/public.json')):
     """Probe fixed public health routes only; never retain response bodies or URLs."""
     status={name:False for name in NETWORK_PROBES}
     try:
@@ -139,8 +139,8 @@ def sample(since):
                 value=fields.get(key,'')
                 result['services'][unit][key]=int(value) if value.isdigit() else None
     except (OSError,subprocess.SubprocessError):result['probe_failed']=True
-    result['jobs']=job_summary(Path('/var/lib/vpn/backend.db'),since)
-    result['watchdog']=watchdog_summary(Path('/var/lib/vpn/watchdog-state.json'))
+    result['jobs']=job_summary(Path('/var/lib/kagnode/vpn/backend.db'),since)
+    result['watchdog']=watchdog_summary(Path('/var/lib/kagnode/vpn/watchdog-state.json'))
     result['probes']=network_summary()
     return result
 

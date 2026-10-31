@@ -4,7 +4,7 @@
 
 KagNode VPN provides Ubuntu-native administration for WireGuard, IKEv2, L2TP/IPsec, AdGuard Home and VPN profile delivery.
 
-**Source version: 4.0.0.** Published downloads are listed in [GitHub Releases](https://github.com/every-lemon/vpn/releases). A version string alone does not establish release qualification; stable publication requires [qualification and real-device testing](docs/STABLE_TESTING.md).
+**Source version: 4.0.0.** Published downloads are listed in [GitHub Releases](https://github.com/every-lemon/kagnode-vpn/releases). A version string alone does not establish release qualification; stable publication requires [qualification and real-device testing](docs/STABLE_TESTING.md).
 See [qualification status](docs/QUALIFICATION.md) for what has actually been tested.
 
 Target: Ubuntu Server 24.04 LTS amd64, physical server or VM; systemd required.
@@ -76,7 +76,7 @@ sudo vpn status
 A verified stable updater runs with `sudo bash update.sh`; beta/RC candidates require
 `sudo bash update.sh --prerelease`.
 It preserves 4.x clients, administrator accounts, MFA and AdGuard configuration.
-After success it archives itself under `/var/lib/vpn/updates/update-VERSION.sh`.
+After success it archives itself under `/var/lib/kagnode/vpn/updates/update-VERSION.sh`.
 
 ## Native layout
 
@@ -85,10 +85,10 @@ The application displays **KagNode VPN**. Its command and Debian package remain
 
 | Purpose | Location |
 | --- | --- |
-| Configuration | `/etc/vpn/` |
-| Code / helpers | `/usr/lib/vpn/`, `/usr/libexec/vpn/` |
-| Private state | `/var/lib/vpn/` (restricted databases/subdirectories) |
-| Logs / runtime | `/var/log/vpn/`, `/run/vpn/` |
+| Configuration | `/etc/kagnode/vpn/` |
+| Code / helpers | `/opt/kagnode/vpn/`, `/opt/kagnode/vpn/helpers/` |
+| Private state | `/var/lib/kagnode/vpn/` (restricted databases/subdirectories) |
+| Logs / runtime | `/var/log/kagnode/vpn/`, `/run/vpn/` |
 | Application services | `vpn-control`, `vpn-management`, `vpn-downloads`, `vpn-firewall`, `vpn-watchdog`, `vpn-maintenance` |
 
 `vpn doctor` and repair write diagnostic evidence locally; private journals can contain
@@ -107,3 +107,11 @@ bash update.sh --verify
 
 See [release procedure](docs/RELEASING.md), [security](SECURITY.md),
 [contribution guide](CONTRIBUTING.md), and [third-party notices](THIRD_PARTY_NOTICES.md).
+
+## KagNode 4.1 preview
+
+This release standardizes the KagNode identity and project-scoped paths. It remains a self-hosted VPN appliance, separate from planned KagNode Cloud hosting. Existing accounts, MFA, policy and profile-delivery controls are retained. [PATHS.md](PATHS.md) provides an explicit dry-run, verified migration and rollback tool; never apply it to a running appliance. This preview has not replaced the last stable appliance or restarted any Client.
+
+Current combined release: **AGPL-3.0-only**. Prior MIT code retains its grants and notice in `LICENSES/MIT-legacy.txt`; upstream components retain `THIRD_PARTY_NOTICES.md`. [Brand policy](BRAND-POLICY.md) does not prohibit license-compliant forks or replacement branding.
+
+[KagNode](https://nebulacoder.com) · [Developer](https://dev.nebulacoder.com) · [Logo assets](https://github.com/every-lemon/kagnode-logos)

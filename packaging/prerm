@@ -1,8 +1,8 @@
 #!/bin/sh
 set -e
 if [ "$1" = remove ] && [ -d /run/systemd/system ]; then
-  if [ -f /var/lib/vpn/policy-installed ] && [ -f /etc/vpn/state.json ]; then
-    /usr/bin/python3 /usr/lib/vpn/manage.py policy-quiesce
+  if [ -f /var/lib/kagnode/vpn/policy-installed ] && [ -f /etc/kagnode/vpn/state.json ]; then
+    /usr/bin/python3 /opt/kagnode/vpn/manage.py policy-quiesce
   fi
   for unit in vpn-management.service vpn-downloads.service vpn-control.service vpn-control.socket vpn-watchdog.timer vpn-maintenance.timer; do
     systemctl stop "$unit" || true

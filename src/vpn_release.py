@@ -7,7 +7,7 @@ import tempfile
 import urllib.request
 from vpn_version import parse,eligible
 
-REPOSITORY='every-lemon/vpn'
+REPOSITORY='every-lemon/kagnode-vpn'
 
 def download(url,limit):
     if not url.startswith('https://'):raise ValueError('HTTPS download required.')
@@ -33,14 +33,14 @@ def select(releases,prerelease=False):
 def fetch(manager,prerelease=False,apply=False):
     releases=json.loads(download('https://api.github.com/repos/'+REPOSITORY+'/releases?per_page=100',2*1024**2))
     release=select(releases,prerelease);version=release['tag_name'][1:]
-    current=Path('/usr/lib/vpn/VERSION').read_text().strip()
+    current=Path('/opt/kagnode/vpn/VERSION').read_text().strip()
     if parse(version)<=parse(current):return {'version':current,'update':False}
     assets={a['name']:a['browser_download_url'] for a in release['assets']}
     with tempfile.TemporaryDirectory(prefix='release-',dir=manager.BASE) as directory:
         tmp=Path(directory)
         manifest=download(assets['manifest.json'],65536);signature=download(assets['manifest.sig'],4096)
         (tmp/'manifest.json').write_bytes(manifest);(tmp/'manifest.sig').write_bytes(signature)
-        manager.command(['openssl','pkeyutl','-verify','-pubin','-inkey','/usr/lib/vpn/release-key.pem','-rawin','-in',str(tmp/'manifest.json'),'-sigfile',str(tmp/'manifest.sig')])
+        manager.command(['openssl','pkeyutl','-verify','-pubin','-inkey','/opt/kagnode/vpn/release-key.pem','-rawin','-in',str(tmp/'manifest.json'),'-sigfile',str(tmp/'manifest.sig')])
         data=json.loads(manifest)
         if data.get('schema')!=1 or data.get('version')!=version or data.get('platform')!='ubuntu-24.04-amd64':raise ValueError('Signed release metadata mismatch.')
         if not apply:return {'version':version,'update':True,'signature':'verified'}

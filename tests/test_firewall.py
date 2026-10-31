@@ -22,7 +22,7 @@ class FirewallTests(unittest.TestCase):
             root = Path(tmp)
             systemd = root / 'systemd'
             systemd.mkdir()
-            function = function.replace('/etc/vpn/state.json', str(root / 'state.json')).replace('/usr/libexec/vpn/firewall.sh', str(root / 'firewall.sh')).replace('/etc/systemd/system', str(systemd)).replace('/var/lib/vpn/ssh-disabled', str(root / 'ssh-disabled'))
+            function = function.replace('/etc/kagnode/vpn/state.json', str(root / 'state.json')).replace('/opt/kagnode/vpn/helpers/firewall.sh', str(root / 'firewall.sh')).replace('/etc/systemd/system', str(systemd)).replace('/var/lib/kagnode/vpn/ssh-disabled', str(root / 'ssh-disabled'))
             script = root / 'test.sh'
             script.write_text('''set -euo pipefail
 BASE=''' + str(root) + '''

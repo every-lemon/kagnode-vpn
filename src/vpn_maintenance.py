@@ -99,8 +99,8 @@ def install(manager):
     manager.command(['apt-get','-y','-o','DPkg::Lock::Timeout=120','install','unattended-upgrades'],timeout=600)
     manager.atomic(manager.ETC/'apt/apt.conf.d/52vpn-security',SECURITY,0o644)
     for unit,mode in (('apt-daily','update'),('apt-daily-upgrade','install')):
-        manager.atomic(manager.ETC/f'systemd/system/{unit}.service.d/vpn.conf', '[Service]\nExecStart=\nExecStart=/usr/bin/flock --exclusive /var/lib/vpn/maintenance.lock /usr/lib/apt/apt.systemd.daily '+mode+'\n',0o644)
-    manager.atomic(manager.ETC/'systemd/system/vpn-maintenance.service','[Unit]\nDescription=VPN scheduled maintenance coordinator\n[Service]\nType=oneshot\nExecStart=/usr/bin/python3 /usr/lib/vpn/manage.py maintenance-tick\nUMask=0077\n',0o644)
+        manager.atomic(manager.ETC/f'systemd/system/{unit}.service.d/vpn.conf', '[Service]\nExecStart=\nExecStart=/usr/bin/flock --exclusive /var/lib/kagnode/vpn/maintenance.lock /usr/lib/apt/apt.systemd.daily '+mode+'\n',0o644)
+    manager.atomic(manager.ETC/'systemd/system/vpn-maintenance.service','[Unit]\nDescription=VPN scheduled maintenance coordinator\n[Service]\nType=oneshot\nExecStart=/usr/bin/python3 /opt/kagnode/vpn/manage.py maintenance-tick\nUMask=0077\n',0o644)
     manager.atomic(manager.ETC/'systemd/system/vpn-maintenance.timer','[Unit]\nDescription=VPN maintenance schedule\n[Timer]\nOnCalendar=*-*-* *:*:00\nAccuracySec=1s\nPersistent=false\n[Install]\nWantedBy=timers.target\n',0o644)
     if not Coordinator(manager).path.exists(): Coordinator(manager).save(Coordinator(manager).load())
     manager.command(['systemctl','daemon-reload'])

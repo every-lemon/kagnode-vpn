@@ -105,7 +105,7 @@ class AdminTests(unittest.TestCase):
         status, headers, body = self.request('/manage/file', 'POST', {'device': self.ident, 'kind': 'email'})
         self.assertEqual(status, '200 OK')
         self.assertIn('.html', headers['Content-Disposition'])
-        self.assertIn(b'KagNode VPN', body)
+        self.assertIn(b'KagNode. VPN', body)
         self.assertIn(b'data:image/svg+xml,', body)
         self.assertIn(b':9000/?token=', body)
         self.assertNotIn(meta['password'].encode(), body)

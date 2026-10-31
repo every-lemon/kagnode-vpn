@@ -15,8 +15,8 @@ class PackageReproducibilityTests(unittest.TestCase):
     def test_actual_package_is_identical_after_checkout_timestamps_change(self):
         with tempfile.TemporaryDirectory() as directory:
             root=Path(directory)
-            for name in ('src','packaging'):shutil.copytree(ROOT/name,root/name,ignore=shutil.ignore_patterns('__pycache__'))
-            for name in ('VERSION','build.py','release-key.pem','LICENSE','THIRD_PARTY_NOTICES.md','README.md'):
+            for name in ('src','packaging','LICENSES','scripts'):shutil.copytree(ROOT/name,root/name,ignore=shutil.ignore_patterns('__pycache__'))
+            for name in ('VERSION','build.py','release-key.pem','LICENSE','THIRD_PARTY_NOTICES.md','README.md','BRAND-POLICY.md','PATHS.md'):
                 shutil.copy2(ROOT/name,root/name)
             (root/'tools').mkdir();shutil.copy2(ROOT/'tools/package.py',root/'tools/package.py')
             env={key:value for key,value in os.environ.items() if key!='VPN_RELEASE_KEY'}
