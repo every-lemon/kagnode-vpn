@@ -19,7 +19,7 @@ FAVICON_URI = 'data:image/svg+xml,' + quote(MARK_SVG, safe='')
 
 def wordmark_svg():
     """Transparent standalone wordmark with light/dark text for documentation."""
-    return ('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 550 128" '
+    return ('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 128" '
             'role="img" aria-labelledby="title"><title>' + NAME + '</title>'
             '<style>text{fill:#101114}@media(prefers-color-scheme:dark){text{fill:#f8fafc}}</style>'
             '<g transform="scale(4)" fill="' + BLUE + '">' +
