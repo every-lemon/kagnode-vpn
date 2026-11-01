@@ -4,17 +4,17 @@
 
 KagNode VPN provides Ubuntu-native administration for WireGuard, IKEv2, L2TP/IPsec, AdGuard Home and VPN profile delivery.
 
-**Source version: 4.0.0.** Published downloads are listed in [GitHub Releases](https://github.com/every-lemon/kagnode-vpn/releases). A version string alone does not establish release qualification; stable publication requires [qualification and real-device testing](docs/STABLE_TESTING.md).
+**Source version: 4.1.0-beta.1.** Published downloads are listed in [GitHub Releases](https://github.com/every-lemon/kagnode-vpn/releases). The first stable release is still undergoing [qualification and real-device testing](docs/STABLE_TESTING.md).
 See [qualification status](docs/QUALIFICATION.md) for what has actually been tested.
 
 Target: Ubuntu Server 24.04 LTS amd64, physical server or VM; systemd required.
 
 ## Installation
 
-After obtaining and verifying the signed 4.0.0 package, configure it explicitly:
+For a new test installation, obtain and verify the signed preview package, then configure it explicitly:
 
 ```sh
-sudo apt install ./vpn_4.0.0_amd64.deb
+sudo apt install ./vpn_4.1.0-beta.1_amd64.deb
 sudo vpn setup --install
 ```
 
@@ -25,6 +25,11 @@ SSH is an explicit choice. No starter VPN clients are created.
 Package installation installs application code; it does not reset credentials or remove
 unrelated packages. An existing newer working Libreswan engine is preserved. Fresh
 installations use Ubuntu's Libreswan package.
+
+An existing installation using `/etc/vpn`, `/usr/lib/vpn` or `/var/lib/vpn` needs the
+reviewed [path migration](PATHS.md) before installing this package. Keep a verified
+backup and a local recovery console. Migration requires stopping the managed
+services and briefly interrupts VPN connections; do not run setup as an upgrade.
 
 ### Explicit 3.x fresh start
 
@@ -97,7 +102,7 @@ operational details. Do not publish runtime databases, exports, keys or recovery
 ## Development and releases
 
 `VERSION` is authoritative. Versions use `Major.Minor.Patch[-beta.N|-rc.N]`; tags use
-`v4.0.0-beta.1`, etc. Debian packages map prereleases to `4.0.0~beta.1`.
+`v4.1.0-beta.1`, etc. Debian packages map prereleases to `4.1.0~beta.1`.
 
 ```sh
 python3 build.py
@@ -110,8 +115,8 @@ See [release procedure](docs/RELEASING.md), [security](SECURITY.md),
 
 ## KagNode 4.1 preview
 
-This release standardizes the KagNode identity and project-scoped paths. It remains a self-hosted VPN appliance, separate from planned KagNode Cloud hosting. Existing accounts, MFA, policy and profile-delivery controls are retained. [PATHS.md](PATHS.md) provides an explicit dry-run, verified migration and rollback tool; never apply it to a running appliance. This preview has not replaced the last stable appliance or restarted any Client.
+This release standardizes the KagNode identity and project-scoped paths. It remains a self-hosted VPN appliance, separate from planned KagNode Cloud hosting. Existing accounts, MFA, policy and profile-delivery controls are retained. [PATHS.md](PATHS.md) provides an explicit dry-run, verified migration and rollback tool; never apply it to a running appliance. Publishing this preview does not update an existing appliance or restart its clients.
 
 Current combined release: **AGPL-3.0-only**. Prior MIT code retains its grants and notice in `LICENSES/MIT-legacy.txt`; upstream components retain `THIRD_PARTY_NOTICES.md`. [Brand policy](BRAND-POLICY.md) does not prohibit license-compliant forks or replacement branding.
 
-[KagNode](https://nebulacoder.com) · [Developer](https://dev.nebulacoder.com) · [Logo assets](https://github.com/every-lemon/kagnode-logos)
+[KagNode](https://nebulacoder.com) · [Developer](https://developer.nebulacoder.com) · [Logo assets](https://github.com/every-lemon/kagnode-logos)
