@@ -21,6 +21,7 @@ import datetime
 import fcntl
 import gzip
 import hashlib
+import ipaddress
 import json
 import os
 import pwd
@@ -4626,6 +4627,20 @@ class Updater:
             result=subprocess.run(list(map(str,args)),stdout=log,stderr=log,timeout=timeout)
         if check and result.returncode:raise UpdateError('Command failed; see private commands.log: '+str(args[0]))
         return result
+    def web_ready(self,port,timeout):
+        # Type=simple can briefly be active even when its worker cannot execute.
+        # Check the real listener without redirects, proxy variables or credentials.
+        try:
+            state=json.loads(self.path('/etc/kagnode/vpn/state.json').read_text())
+            address=ipaddress.IPv4Address(state['lan'])
+            if address.is_unspecified or address.is_multicast:return False
+            result=subprocess.run(['curl','--disable','--silent','--fail','--noproxy','*',
+                '--proto','=http','--connect-timeout','1','--max-time',str(timeout),
+                '--max-filesize','16','--write-out','\n%{http_code}',
+                'http://'+str(address)+':'+str(port)+'/health'],
+                stdout=subprocess.PIPE,stderr=subprocess.DEVNULL,timeout=timeout,check=False)
+            return result.returncode==0 and result.stdout==b'OK\n\n200'
+        except (OSError,ValueError,KeyError,TypeError,subprocess.SubprocessError):return False
     def wait_services(self,timeout=60):
         # A requested unit may finish before its ordered PartOf dependents.
         # Check every unit independently under one deadline; never restart here.
@@ -4645,10 +4660,15 @@ class Updater:
                 except subprocess.TimeoutExpired:
                     ready=False
                 if not ready:pending.append(service)
+            if not pending:
+                for port in (9000,9001):
+                    remaining=deadline-time.monotonic()
+                    if remaining<=0 or not self.web_ready(port,min(2,remaining)):
+                        pending.append('web listener '+str(port))
             if not pending:return
             remaining=deadline-time.monotonic()
             if remaining>0:time.sleep(min(.5,remaining))
-        raise UpdateError('Required services did not become active within '+str(timeout)+' seconds: '+', '.join(pending)+'. See private commands.log.')
+        raise UpdateError('Required services did not become active and responsive within '+str(timeout)+' seconds: '+', '.join(pending)+'. See private commands.log.')
     def diagnostics(self,phase):
         for command in (['journalctl','-u','vpn-control','-u','vpn-downloads','-u','vpn-management','--since','15 minutes ago','-n','150','--no-pager'],['systemctl','status','vpn-control','vpn-downloads','vpn-management','--no-pager']):
             with (self.run_dir/(phase+'-'+command[0]+'.log')).open('w') as log:
