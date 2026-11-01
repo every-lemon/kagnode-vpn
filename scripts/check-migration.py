@@ -59,3 +59,34 @@ for project in roots:
   mod.make_destination_parents(namespace/'new'/'child')
   assert namespace.stat().st_mode&0o777==0o710
  print(mod.PROJECT,'private umask preserves service traversal, private modes and existing permissions: passed')
+
+# dpkg removes old package-owned directory links during a namespace upgrade.
+# Recover only aliases from an already completed and retained migration.
+with tempfile.TemporaryDirectory(prefix='kagnode-dpkg-links-') as tmp:
+ root=Path(tmp);journal=root/'journal.json'
+ for old,new in mod.MAPPINGS:
+  src=root/old.lstrip('/');src.mkdir(parents=True);(src/'keep').write_text(old)
+ def call(*args,ok=True):
+  out=subprocess.run(['python3',str(script),'--root',tmp,'--journal',str(journal),*args],capture_output=True,text=True)
+  assert (out.returncode==0)==ok,out.stdout+out.stderr
+ call('--repair-links',ok=False)
+ call('--apply')
+ paths=[root/old.lstrip('/') for old,new in mod.MAPPINGS[:2]]
+ for path in paths:path.unlink()
+ call('--repair-links');call('--repair-links')
+ for old,new in mod.MAPPINGS:
+  assert (root/old.lstrip('/')).resolve()==(root/new.lstrip('/')).resolve()
+  assert (root/new.lstrip('/')/'keep').read_text()==old
+ # A conflict anywhere must prevent repair of other missing links.
+ for path in paths:path.unlink()
+ paths[1].mkdir();(paths[1]/'unrelated').write_text('keep')
+ call('--repair-links',ok=False)
+ assert not paths[0].exists() and not paths[0].is_symlink()
+ assert (paths[1]/'unrelated').read_text()=='keep'
+ (paths[1]/'unrelated').unlink();paths[1].rmdir()
+ data=json.loads(journal.read_text());data['status']='planned';journal.write_text(json.dumps(data))
+ call('--repair-links',ok=False)
+ assert not paths[0].is_symlink()
+ data['status']='complete';journal.write_text(json.dumps(data))
+ call('--repair-links');call('--rollback');call('--repair-links',ok=False)
+ print(mod.PROJECT,'post-package aliases, idempotence, conflict refusal and incomplete/rolled-back refusal: passed')
