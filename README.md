@@ -4,17 +4,17 @@
 
 KagNode VPN provides Ubuntu-native administration for WireGuard, IKEv2, L2TP/IPsec, AdGuard Home and VPN profile delivery.
 
-**Source version: 4.1.0-beta.1.** Published downloads are listed in [GitHub Releases](https://github.com/every-lemon/kagnode-vpn/releases). The first stable release is still undergoing [qualification and real-device testing](docs/STABLE_TESTING.md).
+**Source version: 4.1.0.** Published downloads are listed in [GitHub Releases](https://github.com/every-lemon/kagnode-vpn/releases). Stable publication requires [qualification and real-device testing](docs/STABLE_TESTING.md).
 See [qualification status](docs/QUALIFICATION.md) for what has actually been tested.
 
 Target: Ubuntu Server 24.04 LTS amd64, physical server or VM; systemd required.
 
 ## Installation
 
-For a new test installation, obtain and verify the signed preview package, then configure it explicitly:
+After obtaining and verifying a signed release package, configure a new installation explicitly:
 
 ```sh
-sudo apt install ./vpn_4.1.0-beta.1_amd64.deb
+sudo apt install ./vpn_4.1.0_amd64.deb
 sudo vpn setup --install
 ```
 
@@ -113,9 +113,9 @@ bash update.sh --verify
 See [release procedure](docs/RELEASING.md), [security](SECURITY.md),
 [contribution guide](CONTRIBUTING.md), and [third-party notices](THIRD_PARTY_NOTICES.md).
 
-## KagNode 4.1 preview
+## KagNode 4.1
 
-This release standardizes the KagNode identity and project-scoped paths. It remains a self-hosted VPN appliance, separate from planned KagNode Cloud hosting. Existing accounts, MFA, policy and profile-delivery controls are retained. [PATHS.md](PATHS.md) provides an explicit dry-run, verified migration and rollback tool; never apply it to a running appliance. Publishing this preview does not update an existing appliance or restart its clients.
+This release standardizes the KagNode identity and project-scoped paths. It remains a self-hosted VPN appliance, separate from planned KagNode Cloud hosting. Existing accounts, MFA, policy and profile-delivery controls are retained. [PATHS.md](PATHS.md) provides an explicit dry-run, verified migration and rollback tool; never apply it to a running appliance. Publishing a release does not update an existing appliance or restart its clients.
 
 Current combined release: **AGPL-3.0-only**. Prior MIT code retains its grants and notice in `LICENSES/MIT-legacy.txt`; upstream components retain `THIRD_PARTY_NOTICES.md`. [Brand policy](BRAND-POLICY.md) does not prohibit license-compliant forks or replacement branding.
 
