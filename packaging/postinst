@@ -4,5 +4,11 @@ set -e
 if [ "$1" = configure ]; then
   install -d -m 0711 /var/lib/kagnode/vpn
   install -d -m 0700 /etc/kagnode/vpn /var/log/kagnode/vpn
+  # dpkg removes obsolete package-owned directories during a real 4.0 upgrade,
+  # including links created by the explicitly reviewed path migration.
+  # Repair only that completed migration; fresh installs do not create aliases.
+  if [ -e /var/lib/kagnode-migrations/vpn.json ]; then
+    python3 /usr/share/doc/vpn/migrate-paths.py --repair-links
+  fi
   if [ -d /run/systemd/system ]; then systemctl daemon-reload; fi
 fi

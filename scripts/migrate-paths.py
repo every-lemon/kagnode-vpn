@@ -37,13 +37,17 @@ def make_destination_parents(path):
 def main():
     parser=argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--root',type=Path,default=Path('/'),help='Alternate root for disposable fixture testing')
-    parser.add_argument('--apply',action='store_true');parser.add_argument('--rollback',action='store_true');parser.add_argument('--journal',type=Path)
+    actions=parser.add_mutually_exclusive_group()
+    actions.add_argument('--apply',action='store_true');actions.add_argument('--rollback',action='store_true')
+    actions.add_argument('--repair-links',action='store_true',help='Restore only missing compatibility links from a completed, retained migration')
+    parser.add_argument('--journal',type=Path)
     args=parser.parse_args();root=args.root.resolve()
     if not root.is_dir():raise RuntimeError('Root must exist.')
-    if root==Path('/') and (args.apply or args.rollback):
+    if root==Path('/') and (args.apply or args.rollback or args.repair_links):
         if os.geteuid()!=0:raise RuntimeError('Root is required for a system migration.')
-        active=[unit for unit in SERVICES if subprocess.run(['systemctl','is-active','--quiet',unit]).returncode==0]
-        if active:raise RuntimeError('Stop these services before migration: '+', '.join(active))
+        if not args.repair_links:
+            active=[unit for unit in SERVICES if subprocess.run(['systemctl','is-active','--quiet',unit]).returncode==0]
+            if active:raise RuntimeError('Stop these services before migration: '+', '.join(active))
     def local(raw):
         p=root/raw.lstrip('/')
         for parent in p.parents:
@@ -52,6 +56,7 @@ def main():
         return p
     journal=args.journal or local('/var/lib/kagnode-migrations/'+PROJECT+'.json')
     if journal.is_symlink():raise RuntimeError('Journal must not be a symlink.')
+    if args.repair_links and not journal.is_file():raise RuntimeError('A completed migration journal is required to repair links.')
     if journal.exists():
         data=json.loads(journal.read_text())
         if data.get('project')!=PROJECT or data.get('root')!=str(root):raise RuntimeError('Journal belongs to another project/root.')
@@ -77,6 +82,28 @@ def main():
                     reserved=local(parent['old'])/b.relative_to(a)
                     if reserved.exists() or reserved.is_symlink():raise RuntimeError('Overlapping destination content requires manual review: '+str(reserved))
         data={'project':PROJECT,'root':str(root),'created':int(time.time()),'records':records,'status':'planned'}
+    if args.repair_links:
+        if data.get('status')!='complete':raise RuntimeError('Only a completed migration can have its links repaired.')
+        missing=[]
+        for record in data['records']:
+            pair=(record['old'],record['new'])
+            if pair not in MAPPINGS or record.get('stage')!='complete':raise RuntimeError('Unexpected or incomplete migration record.')
+            src,dst=local(pair[0]),local(pair[1])
+            backup=src.with_name(src.name+'.before-kagnode-'+PROJECT)
+            if record.get('backup')!=str(backup.relative_to(root)) or backup.is_symlink() or not backup.is_dir():
+                raise RuntimeError('The retained original is required to repair links: '+pair[0])
+            if dst.is_symlink() or not dst.is_dir():raise RuntimeError('The migrated directory is missing or unsafe: '+pair[1])
+            if dst.is_relative_to(src):raise RuntimeError('Nested source layouts need manual link review.')
+            if src.is_symlink():
+                if src.resolve()!=dst.resolve():raise RuntimeError('An unrelated link occupies the old path: '+pair[0])
+            elif src.exists():raise RuntimeError('An existing directory occupies the old path: '+pair[0])
+            else:missing.append((src,dst))
+        # Validate every record before changing any link. Do not copy data,
+        # rewrite service definitions, change permissions or restart services.
+        for src,dst in missing:
+            src.symlink_to(os.path.relpath(dst,src.parent),target_is_directory=True)
+        print('Restored '+str(len(missing))+' missing compatibility links from the completed migration.')
+        return
     print(json.dumps(data,indent=2))
     if not args.apply and not args.rollback:return
     journal.parent.mkdir(parents=True,exist_ok=True,mode=0o700)
