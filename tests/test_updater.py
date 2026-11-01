@@ -28,6 +28,7 @@ def release_payload(version):
 
 class FakeUpdater(u.Updater):
     def __init__(self,*args,fail=None,**kw):super().__init__(*args,**kw);self.calls=[];self.fail=fail
+    def web_ready(self,port,timeout):return True
     def command(self,args,check=True,timeout=600):
         self.calls.append(list(map(str,args)))
         if self.fail and self.fail in list(map(str,args)) and check:raise u.UpdateError('simulated deployment failure')
@@ -113,6 +114,40 @@ class UpdaterTests(unittest.TestCase):
         self.assertEqual(len({service for service,when,_,_ in probes if when==2}),8)
         self.assertTrue(all(not check and 0<timeout<=3 for _,_,check,timeout in probes))
         self.assertFalse(any(c[:2]==['systemctl','restart'] for c in update.calls))
+    def test_active_unit_with_dead_http_worker_cannot_commit_update(self):
+        for port in (9000,9001):
+            with self.subTest(port=port):
+                update=self.updater();clock=Clock()
+                update.web_ready=lambda listener,timeout:listener!=port
+                with patch.object(u.time,'monotonic',clock),patch.object(u.time,'sleep',clock.sleep):
+                    with self.assertRaisesRegex(u.UpdateError,'web listener '+str(port)):
+                        self.execute(update)
+                self.assertEqual(clock.now,60);self.assert_private_unchanged()
+                self.assertEqual((self.code/'manage.py').read_text(),'old runtime')
+                self.assertTrue(self.source.exists())
+                self.assertFalse((self.base/'updates'/('update-'+PAYLOAD['version']+'.sh')).exists())
+    def test_http_probes_share_the_service_readiness_deadline(self):
+        update=self.updater();clock=Clock();timeouts=[]
+        def unavailable(port,timeout):
+            timeouts.append(timeout);clock.sleep(timeout);return False
+        update.web_ready=unavailable
+        with patch.object(u.time,'monotonic',clock),patch.object(u.time,'sleep',clock.sleep):
+            with self.assertRaisesRegex(u.UpdateError,'responsive'):
+                self.execute(update)
+        self.assertEqual(clock.now,60)
+        self.assertTrue(all(0<t<=2 for t in timeouts));self.assert_private_unchanged()
+    def test_http_probe_requires_exact_health_response_and_ignores_proxy_environment(self):
+        state=json.loads(self.state.read_text());state['lan']='192.0.2.10';self.state.write_text(json.dumps(state))
+        update=self.updater()
+        for body,code,expected in ((b'OK\n\n200',0,True),(b'OK\n\n302',0,False),(b'HTML\n200',0,False),(b'OK\n\n200',7,False)):
+            with self.subTest(body=body,code=code),patch.object(u.subprocess,'run',return_value=types.SimpleNamespace(returncode=code,stdout=body)) as run:
+                self.assertEqual(u.Updater.web_ready(update,9001,.75),expected)
+                args=run.call_args.args[0]
+                self.assertEqual(args[-1],'http://192.0.2.10:9001/health')
+                self.assertEqual(args[args.index('--noproxy')+1],'*')
+                self.assertEqual(run.call_args.kwargs['timeout'],.75)
+        with patch.object(u.subprocess,'run',side_effect=subprocess.TimeoutExpired('curl',.75)):
+            self.assertFalse(u.Updater.web_ready(update,9000,.75))
     def test_hung_service_probes_share_deadline_and_diagnostics_cannot_block_rollback(self):
         update=self.updater();original=update.command;clock=Clock();timeouts=[]
         def probe(args,check=True,timeout=600):
