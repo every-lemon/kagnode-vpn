@@ -16,6 +16,7 @@ manager=setup.split("<<'PY_RUNTIME'\n",1)[1].split('\nPY_RUNTIME\n',1)[0]
 shutil.copy2(ROOT/'VERSION',root/'opt/kagnode/vpn/VERSION')
 if (ROOT/'release-key.pem').exists():shutil.copy2(ROOT/'release-key.pem',root/'opt/kagnode/vpn/release-key.pem')
 shutil.copy2(ROOT/'setup.sh',root/'opt/kagnode/vpn/helpers/setup.sh')
+shutil.copy2(ROOT/'scripts/migrate-paths.py',root/'opt/kagnode/vpn/helpers/migrate-paths.py')
 shutil.copy2(ROOT/'packaging/vpn',root/'usr/bin/vpn')
 for name in ('preinst','postinst','prerm'):shutil.copy2(ROOT/'packaging'/name,root/'DEBIAN'/name)
 for name in ('LICENSE','THIRD_PARTY_NOTICES.md','README.md','BRAND-POLICY.md','PATHS.md'):

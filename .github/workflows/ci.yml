@@ -38,3 +38,4 @@ jobs:
           dpkg-deb --info dist/*.deb
           dpkg-deb --contents dist/*.deb
           sha256sum dist/*.deb dist/setup.sh dist/update.sh
+          sudo python3 tools/check_docless_package.py dist/*.deb
