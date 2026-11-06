@@ -15,7 +15,8 @@ for node in module.body:
         source['STYLE']+=ast.literal_eval(node.value)
 source['STYLE']+='\n'+(root/'web/kagnode-ui.css').read_text()+'\n'+(root/'web/product.css').read_text()
 source['STYLE']+='\n'+(root/'web/kagnode-scroll.css').read_text()
-source['SCRIPT']=(root/'web/kagnode-scroll.js').read_text()+'\n'+(root/'web/theme.js').read_text()+'\n'+source['SCRIPT']
+scroll='(()=>{if(typeof window==="undefined"||typeof document==="undefined"||!document.scrollingElement||typeof ResizeObserver!=="function"||typeof MutationObserver!=="function"||typeof matchMedia!=="function")return;\n'+(root/'web/kagnode-scroll.js').read_text()+'\n})();'
+source['SCRIPT']=scroll+'\n'+(root/'web/theme.js').read_text()+'\n'+source['SCRIPT']
 compiled={};hashes={}
 with tempfile.TemporaryDirectory(prefix='kagnode-vpn-ui-') as folder:
     for key,extension in [('STYLE','css'),('SCRIPT','js')]:

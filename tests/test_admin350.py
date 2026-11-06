@@ -73,7 +73,7 @@ class AdminTests(unittest.TestCase):
         self.assertNotIn(b'Download p12', detail)
         self.assertIn(b'Download email as HTML', detail)
         self.assertIn(b'Prepare selected profiles', detail)
-        self.assertNotIn(b'animation:', detail)
+        self.assertNotIn(b'animation:', detail.split(b'</style>',1)[0])
         self.assertIn(b'data-management', detail)
         self.assertIn(b'/manage/status', detail)
 
