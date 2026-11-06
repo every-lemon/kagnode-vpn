@@ -1,3 +1,10 @@
+# 4.2.0-beta.1
+
+- Shared KagNode interface, consistent navigation and mobile controls.
+- Theme preference and persistent product branding.
+- Prebuilt minified UI code protected by existing CSP content hashes; source retained.
+- VPN transport, account credentials, policies and native services are unchanged.
+
 # 4.1.0-beta.1
 
 KagNode branding, project-scoped path defaults and an explicit migration tool. Source history and prior releases are retained. See PATHS.md and LICENSES/.

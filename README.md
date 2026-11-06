@@ -4,7 +4,7 @@
 
 KagNode VPN provides Ubuntu-native administration for WireGuard, IKEv2, L2TP/IPsec, AdGuard Home and VPN profile delivery.
 
-**Source version: 4.1.0-beta.1.** Published downloads are listed in [GitHub Releases](https://github.com/every-lemon/kagnode-vpn/releases). The first stable release is still undergoing [qualification and real-device testing](docs/STABLE_TESTING.md).
+**Source version: 4.2.0-beta.1.** Published downloads are listed in [GitHub Releases](https://github.com/every-lemon/kagnode-vpn/releases). The first stable release is still undergoing [qualification and real-device testing](docs/STABLE_TESTING.md).
 See [qualification status](docs/QUALIFICATION.md) for what has actually been tested.
 
 Target: Ubuntu Server 24.04 LTS amd64, physical server or VM; systemd required.
@@ -120,3 +120,10 @@ This release standardizes the KagNode identity and project-scoped paths. It rema
 Current combined release: **AGPL-3.0-only**. Prior MIT code retains its grants and notice in `LICENSES/MIT-legacy.txt`; upstream components retain `THIRD_PARTY_NOTICES.md`. [Brand policy](BRAND-POLICY.md) does not prohibit license-compliant forks or replacement branding.
 
 [KagNode](https://nebulacoder.com) · [Developer](https://developer.nebulacoder.com) · [Logo assets](https://github.com/every-lemon/kagnode-logos)
+
+
+### Product interface
+
+The dashboard and profile-delivery pages use the shared KagNode black/white/blue UI, keyboard focus styles, responsive controls, and an appearance switch. Browser CSS and JavaScript are minified at build time and authorized by content hashes in the Content Security Policy. No source maps or remote UI dependencies are served. Readable sources and licenses stay in this repository; branding does not prevent inspection or lawful reuse.
+
+Rebuild with esbuild 0.28.2: `ESBUILD=/path/to/esbuild python3 scripts/build-web.py`. The resulting Python asset module ships with the worker, so Node.js is not a runtime dependency. This UI preview does not mark outstanding stable-release hardware checks complete.

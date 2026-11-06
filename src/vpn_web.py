@@ -37,7 +37,7 @@ TMPFILES_RULES = 'f /run/xtables.lock 0600 root root -\n'
 MAX_RPC = 8 * 1024**2
 # Explicit dependencies of the unprivileged loose-file HTTP workers. The root
 # broker's embedded module loader must not hide missing worker dependencies.
-WORKER_MODULES = ('vpn_auth','vpn_admin','vpn_dashboard','vpn_brand','vpn_business')
+WORKER_MODULES = ('vpn_auth','vpn_admin','vpn_dashboard','vpn_brand','vpn_business','vpn_ui_assets')
 
 
 from vpn_auth import AuthError as WebError
@@ -909,11 +909,11 @@ def control_serve(backend):
 
 
 def page(title, body):
-    from vpn_admin import STYLE, brand_markup
+    from vpn_admin import STYLE, SCRIPT, brand_markup
     from vpn_brand import NAME, PROJECT, FAVICON_URI
     branded_title = title if NAME in title else title + ' · ' + NAME
     return ('<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width">'
-            '<title>' + html.escape(branded_title) + '</title><meta name="application-name" content="' + html.escape(NAME, quote=True) + '"><meta name="description" content="' + html.escape(PROJECT, quote=True) + '"><link rel="icon" type="image/svg+xml" href="' + html.escape(FAVICON_URI, quote=True) + '"><style>' + STYLE + '</style></head><body class="' + ('management' if '<div class="app-shell"' in body else 'standalone') + '"><header>' + brand_markup() + '<h1>' + html.escape(title) + '</h1><p class="project-name">' + html.escape(PROJECT) + '</p></header><main>' + body + '</main></body></html>').encode()
+            '<title>' + html.escape(branded_title) + '</title><meta name="application-name" content="' + html.escape(NAME, quote=True) + '"><meta name="description" content="' + html.escape(PROJECT, quote=True) + '"><link rel="icon" type="image/svg+xml" href="' + html.escape(FAVICON_URI, quote=True) + '"><style>' + STYLE + '</style></head><body class="kn-ui ' + ('management' if '<div class="app-shell"' in body else 'standalone') + '"><header>' + brand_markup() + '<h1>' + html.escape(title) + '</h1><p class="project-name">' + html.escape(PROJECT) + '</p></header><main>' + body + '</main><footer class="kn-product-signature kn-vpn-signature"><a href="https://nebulacoder.com"><strong>KagNode<span>.</span></strong> VPN</a><a href="https://github.com/every-lemon/kagnode-vpn" rel="noreferrer">Open source</a>' + ('<button type="button" data-kn-theme>Switch appearance</button>' if '<script>' in body else '') + '</footer></body></html>').encode()
 
 
 def form(action, csrf, fields, extra=''):

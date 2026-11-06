@@ -563,3 +563,7 @@ def restore_form_values(document, values):
         parser=Controls();parser.feed(source)
         return ''.join(parser.parts)
     return re.sub(r'<form\b.*?</form>',replace,document.decode(),flags=re.S).encode()
+
+
+# Prebuilt, minified browser code; readable sources and builder remain in the repository.
+from vpn_ui_assets import STYLE, SCRIPT
