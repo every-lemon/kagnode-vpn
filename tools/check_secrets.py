@@ -34,7 +34,9 @@ for name in result.stdout.decode().split("\0"):
     if any(pattern.search(raw) for pattern in patterns):
         errors.append(name + ": credential material found")
     if name == "setup.sh":
-        match = re.search(rb"^_MODULE_ARCHIVE = '([^']+)'$", raw, re.M)
+        match = re.search(
+            rb"^_MODULE_ARCHIVE = [\"']([A-Za-z0-9+/=]+)[\"']$", raw, re.M
+        )
         if not match:
             errors.append("setup.sh: embedded modules missing")
         else:
