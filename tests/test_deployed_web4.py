@@ -1,4 +1,5 @@
 """Exercise the installed worker entrypoint without development modules on sys.path."""
+
 import json
 from pathlib import Path
 import subprocess
@@ -8,16 +9,34 @@ import unittest
 from test_manager import ROOT
 from vpn_web import WORKER_MODULES
 
+
 class DeployedWorkerTests(unittest.TestCase):
     def test_shared_renderers_load_from_actual_deployment_layout(self):
         with tempfile.TemporaryDirectory() as folder:
-            root=Path(folder)
+            root = Path(folder)
             for name in WORKER_MODULES:
-                (root/(name+'.py')).write_bytes((ROOT/'src'/(name+'.py')).read_bytes())
-            text=(ROOT/'src/vpn_web.py').read_text().replace("PUBLIC = Path('/var/lib/kagnode/vpn/public')",'PUBLIC = Path('+repr(str(root))+')')
-            (root/'web.py').write_text(text)
-            (root/'public.json').write_text(json.dumps({'lan':'127.0.0.1','public':'8.8.8.8','endpoint':'vpn.example.test'}))
-            harness='''import io,os,sys,types,runpy
+                (root / (name + ".py")).write_bytes(
+                    (ROOT / "src" / (name + ".py")).read_bytes()
+                )
+            text = (
+                (ROOT / "src/vpn_web.py")
+                .read_text()
+                .replace(
+                    "PUBLIC = Path('/var/lib/kagnode/vpn/public')",
+                    "PUBLIC = Path(" + repr(str(root)) + ")",
+                )
+            )
+            (root / "web.py").write_text(text)
+            (root / "public.json").write_text(
+                json.dumps(
+                    {
+                        "lan": "127.0.0.1",
+                        "public": "8.8.8.8",
+                        "endpoint": "vpn.example.test",
+                    }
+                )
+            )
+            harness = """import io,os,sys,types,runpy
 from pathlib import Path
 sys.path.insert(0,sys.argv[1])
 os.geteuid=lambda:1001
@@ -81,6 +100,11 @@ def serve(app,**kwargs):
  print('Installed worker renderers passed')
 sys.modules['waitress']=types.SimpleNamespace(serve=serve)
 runpy.run_path(sys.argv[1]+'/web.py',run_name='__main__')
-'''
-            result=subprocess.run([sys.executable,'-I','-c',harness,str(root)],capture_output=True,text=True,timeout=15)
-            self.assertEqual(result.returncode,0,result.stdout+result.stderr)
+"""
+            result = subprocess.run(
+                [sys.executable, "-I", "-c", harness, str(root)],
+                capture_output=True,
+                text=True,
+                timeout=15,
+            )
+            self.assertEqual(result.returncode, 0, result.stdout + result.stderr)

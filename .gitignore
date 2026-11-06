@@ -12,3 +12,10 @@ dist/
 *.sswan
 *.mhtml
 .env
+
+# Repository release tooling
+dist/
+.build/
+.ruff_cache/
+__pycache__/
+*.pyc

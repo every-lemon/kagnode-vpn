@@ -1,4 +1,5 @@
 """Execute the generated firewall in its own Linux network namespace."""
+
 import os
 from pathlib import Path
 import shutil
@@ -10,22 +11,40 @@ ROOT = Path(__file__).resolve().parents[1]
 
 
 class FirewallTests(unittest.TestCase):
-    @unittest.skipUnless(os.geteuid() == 0 and shutil.which('unshare') and shutil.which('iptables'),
-                         'requires root, unshare and iptables')
+    @unittest.skipUnless(
+        os.geteuid() == 0 and shutil.which("unshare") and shutil.which("iptables"),
+        "requires root, unshare and iptables",
+    )
     def test_rules_survive_reruns_and_restore_before_wireguard(self):
-        supported = subprocess.run(['unshare', '--net', 'true'], capture_output=True)
+        supported = subprocess.run(["unshare", "--net", "true"], capture_output=True)
         if supported.returncode:
-            self.skipTest('network namespaces unavailable')
-        source = (ROOT / 'src/installer.sh').read_text()
-        function = source[source.index('write_firewall() {'):source.index('\nsetup_wireguard() {')]
+            self.skipTest("network namespaces unavailable")
+        source = (ROOT / "src/installer.sh").read_text()
+        function = source[
+            source.index("write_firewall() {") : source.index("\nsetup_wireguard() {")
+        ]
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
-            systemd = root / 'systemd'
+            systemd = root / "systemd"
             systemd.mkdir()
-            function = function.replace('/etc/kagnode/vpn/state.json', str(root / 'state.json')).replace('/opt/kagnode/vpn/helpers/firewall.sh', str(root / 'firewall.sh')).replace('/etc/systemd/system', str(systemd)).replace('/var/lib/kagnode/vpn/ssh-disabled', str(root / 'ssh-disabled'))
-            script = root / 'test.sh'
-            script.write_text('''set -euo pipefail
-BASE=''' + str(root) + '''
+            function = (
+                function.replace(
+                    "/etc/kagnode/vpn/state.json", str(root / "state.json")
+                )
+                .replace(
+                    "/opt/kagnode/vpn/helpers/firewall.sh", str(root / "firewall.sh")
+                )
+                .replace("/etc/systemd/system", str(systemd))
+                .replace(
+                    "/var/lib/kagnode/vpn/ssh-disabled", str(root / "ssh-disabled")
+                )
+            )
+            script = root / "test.sh"
+            script.write_text(
+                """set -euo pipefail
+BASE="""
+                + str(root)
+                + """
 LAN_NET=192.168.0.0/24
 LAN_IP=192.168.0.8
 WG_NET=10.66.66.0/24
@@ -33,7 +52,9 @@ L2TP_NET=192.168.42.0/24
 IKE_NET=192.168.43.0/24
 IFACE=ens18
 systemctl() { :; }
-''' + function + '''
+"""
+                + function
+                + """
 # Model the upstream terminal drop and an existing SSH rule.
 iptables -A INPUT -p tcp --dport 22 -j ACCEPT
 iptables -A FORWARD -j DROP
@@ -90,14 +111,21 @@ iptables -C INPUT -p tcp --dport 22 -j ACCEPT
 # The corrected probe interface is accepted by the kernel.
 ip link add wg-stack-test type wireguard
 ip link delete wg-stack-test
-''')
-            result = subprocess.run(['unshare', '--net', 'bash', str(script)], capture_output=True, text=True)
+"""
+            )
+            result = subprocess.run(
+                ["unshare", "--net", "bash", str(script)],
+                capture_output=True,
+                text=True,
+            )
             self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
-            unit = (systemd / 'vpn-firewall.service').read_text()
-            self.assertIn('After=load-iptables-rules.service netfilter-persistent.service', unit)
-            dropin = (systemd / 'wg-quick@wg0.service.d/vpn.conf').read_text()
-            self.assertIn('Requires=vpn-firewall.service', dropin)
+            unit = (systemd / "vpn-firewall.service").read_text()
+            self.assertIn(
+                "After=load-iptables-rules.service netfilter-persistent.service", unit
+            )
+            dropin = (systemd / "wg-quick@wg0.service.d/vpn.conf").read_text()
+            self.assertIn("Requires=vpn-firewall.service", dropin)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.main()

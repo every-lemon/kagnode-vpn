@@ -1,129 +1,77 @@
-# KagNode Open source VPN server
+<p align="center"><img src="assets/kagnode-wordmark.svg" width="440" alt="KagNode."></p>
 
-![KagNode VPN](assets/kagnode-wordmark.svg)
+# KagNode VPN
 
-KagNode VPN provides Ubuntu-native administration for WireGuard, IKEv2, L2TP/IPsec, AdGuard Home and VPN profile delivery.
+## Overview
 
-**Source version: 4.2.0-beta.1.** Published downloads are listed in [GitHub Releases](https://github.com/every-lemon/kagnode-vpn/releases). The first stable release is still undergoing [qualification and real-device testing](docs/STABLE_TESTING.md).
-See [qualification status](docs/QUALIFICATION.md) for what has actually been tested.
+Self-hosted VPN accounts, access policy, MFA and profile delivery.
 
-Target: Ubuntu Server 24.04 LTS amd64, physical server or VM; systemd required.
+## Release status
 
-## Installation
+Product source: **4.2.0-beta.1**. Packaging preview: **4.2.0-beta.1.packaging.1**.
 
-For a new test installation, obtain and verify the signed preview package, then configure it explicitly:
+Packaging prereleases do not change the latest stable release or establish new hardware or service compatibility. See [verification](docs/VERIFICATION.md) and [changelog](CHANGELOG.md).
 
-```sh
-sudo apt install ./vpn_4.1.0-beta.1_amd64.deb
-sudo vpn setup --install
-```
+## Features
 
-Alternatively, [verify the signed release](docs/VERIFYING.md) and run the standalone `setup.sh`.
-The setup pauses for first-owner MFA enrollment and the manual AdGuard browser wizard.
-SSH is an explicit choice. No starter VPN clients are created.
+- WireGuard, IKEv2 and L2TP administration.
+- Accounts, access controls, MFA and profile downloads.
+- Signed release manifests and explicit setup/update workflows.
 
-Package installation installs application code; it does not reset credentials or remove
-unrelated packages. An existing newer working Libreswan engine is preserved. Fresh
-installations use Ubuntu's Libreswan package.
+## Requirements
 
-An existing installation using `/etc/vpn`, `/usr/lib/vpn` or `/var/lib/vpn` needs the
-reviewed [path migration](PATHS.md) before installing this package. Keep a verified
-backup and a local recovery console. Migration requires stopping the managed
-services and briefly interrupts VPN connections; do not run setup as an upgrade.
+Ubuntu 24.04 amd64 for the existing native installer. WireGuard/IPsec operation requires the documented kernel, networking and firewall prerequisites.
 
-### Explicit 3.x fresh start
+## Installation and downloads
 
-`sudo bash setup.sh --fresh-start` requires typing `RESET VPN AND ADGUARD` at a private
-interactive console. It verifies a private backup, then removes the managed old VPN
-trust material, clients, administrative state and AdGuard settings. OS networking and
-installed engine binaries are preserved. Mixed unmanaged PPP/IPsec configurations
-cause a refusal before deletion. Old clients do not become active again after failure.
-Backups are under `/var/lib/vpn-recovery/`; recovery is deliberate, never automatic.
+Download from [GitHub Releases](https://github.com/every-lemon/kagnode-vpn/releases). Verify `SHA256SUMS` before extracting or installing a package.
 
-## Administration
+| Payload | Formats | Support |
+| --- | --- | --- |
+| Complete source / artwork | `.tar.xz`, `.tar.gz`, `.zip` | Named top-level directory; manual setup |
+| Source preview | `.deb` | Source only; does not provision a service |
+| Source preview | `.rpm` | Rocky Linux 10 packaging preview; native services unverified |
 
-`sudo vpn` opens the authenticated arrow-key console (search with `/`, help with `?`).
-Use `VPN_STACK_PLAIN=1 sudo -E vpn` for plain text. The dashboard stays online on LAN
-port **9001**; profile delivery stays online on **9000**. Individual sessions expire
-at 30 idle minutes or eight hours absolute. Background polling does not extend sessions.
+Existing signed `.deb`, setup.sh and update.sh workflows remain available for the documented Ubuntu target.
 
-Every administrator uses a username, password and authenticator MFA. Recovery codes
-are single-use and stored as hashes. If all owners lose access, `sudo vpn recover-owner`
-provides an explicit, audited root-console recovery path with new MFA enrollment. Owners manage administrators/system settings;
-Operators manage clients/profiles/policies; Auditors receive redacted status/audit.
+Source packages install under `/usr/share/kagnode/`; they do not replace an existing application, migrate data, start services or configure networking.  See [package details](docs/PACKAGING.md).
 
-New clients belong to **ungrouped clients**: internet and server DNS allowed,
-LAN/resources and client-to-client traffic blocked. Group/user/device rules apply
-only to IPv4 traffic **through the VPN**. They are not a device-wide kill switch.
-Explicit denies take precedence; expired/disabled/revoked identities have no grants.
-
-VPD preserves native `.mobileconfig` delivery to Safari. One token permits one file
-download total, including when multiple formats are offered. HEAD/inspection does
-not consume tokens. Revocation, reissue, QR sharing and token history are separate
-from import passwords. Share passwords through a separate channel.
-
-## Ubuntu maintenance and application updates
-
-Ubuntu security updates use `unattended-upgrades` and native APT timers. Reboots default
-to manual; owners can schedule a one-time reboot or a daily reboot-required window in
-an explicit timezone. The coordinator serializes maintenance and uses durable reboot
-budgets. Application releases are separate and are applied explicitly:
-
-```sh
-sudo vpn update                 # check stable releases and signatures
-sudo vpn update --apply         # owner MFA required
-sudo vpn update --prerelease    # explicitly include beta/RC
-sudo vpn doctor
-sudo vpn repair                 # authenticated repair workflow
-sudo vpn status
-```
-
-A verified stable updater runs with `sudo bash update.sh`; beta/RC candidates require
-`sudo bash update.sh --prerelease`.
-It preserves 4.x clients, administrator accounts, MFA and AdGuard configuration.
-After success it archives itself under `/var/lib/kagnode/vpn/updates/update-VERSION.sh`.
-
-## Native layout
-
-The application displays **KagNode VPN**. Its command and Debian package remain
-`vpn`, with the native paths and `vpn-*` service names below.
-
-| Purpose | Location |
-| --- | --- |
-| Configuration | `/etc/kagnode/vpn/` |
-| Code / helpers | `/opt/kagnode/vpn/`, `/opt/kagnode/vpn/helpers/` |
-| Private state | `/var/lib/kagnode/vpn/` (restricted databases/subdirectories) |
-| Logs / runtime | `/var/log/kagnode/vpn/`, `/run/vpn/` |
-| Application services | `vpn-control`, `vpn-management`, `vpn-downloads`, `vpn-firewall`, `vpn-watchdog`, `vpn-maintenance` |
-
-`vpn doctor` and repair write diagnostic evidence locally; private journals can contain
-operational details. Do not publish runtime databases, exports, keys or recovery archives.
-
-## Development and releases
-
-`VERSION` is authoritative. Versions use `Major.Minor.Patch[-beta.N|-rc.N]`; tags use
-`v4.1.0-beta.1`, etc. Debian packages map prereleases to `4.1.0~beta.1`.
+## Usage
 
 ```sh
 python3 build.py
-python3 tools/package.py
 bash update.sh --verify
 ```
 
-See [release procedure](docs/RELEASING.md), [security](SECURITY.md),
-[contribution guide](CONTRIBUTING.md), and [third-party notices](THIRD_PARTY_NOTICES.md).
+See [operations and existing setup instructions](docs/OPERATIONS.md) for the full workflow and its prerequisites.
 
-## KagNode 4.1 preview
+## Configuration and storage
 
-This release standardizes the KagNode identity and project-scoped paths. It remains a self-hosted VPN appliance, separate from planned KagNode Cloud hosting. Existing accounts, MFA, policy and profile-delivery controls are retained. [PATHS.md](PATHS.md) provides an explicit dry-run, verified migration and rollback tool; never apply it to a running appliance. Publishing this preview does not update an existing appliance or restart its clients.
+Keep /etc/kagnode/vpn and /var/lib/kagnode/vpn separate from editable source. Existing migrations and package identities remain unchanged.
 
-Current combined release: **AGPL-3.0-only**. Prior MIT code retains its grants and notice in `LICENSES/MIT-legacy.txt`; upstream components retain `THIRD_PARTY_NOTICES.md`. [Brand policy](BRAND-POLICY.md) does not prohibit license-compliant forks or replacement branding.
+## Security
 
-[KagNode](https://nebulacoder.com) · [Developer](https://developer.nebulacoder.com) · [Logo assets](https://github.com/every-lemon/kagnode-logos)
+Use HTTPS and least-privilege accounts for hosted services. Keep secrets and user data out of Git. Preview packages are for inspection and controlled testing; native service and hardware claims remain limited to recorded verification. See [security guidance](docs/SECURITY.md).
 
+## Development and testing
 
-### Product interface
+```sh
+python3 tools/run_release_tests.py
+python3 scripts/repository_check.py
+python3 scripts/format_source.py --check
+python3 scripts/release.py --output dist/packages
+```
 
-The dashboard and profile-delivery pages use the shared KagNode black/white/blue UI, keyboard focus styles, responsive controls, and an appearance switch. Browser CSS and JavaScript are minified at build time and authorized by content hashes in the Content Security Policy. No source maps or remote UI dependencies are served. Readable sources and licenses stay in this repository; branding does not prevent inspection or lawful reuse.
+Install the formatting dependencies from `requirements-format.txt`. Package building additionally needs `dpkg-deb`, `rpmbuild`, XZ support and, for CLI binaries, Go. Read [the repository map](docs/STRUCTURE.md) before editing generated files.
 
-Rebuild with esbuild 0.28.2: `ESBUILD=/path/to/esbuild python3 scripts/build-web.py`. The resulting Python asset module ships with the worker, so Node.js is not a runtime dependency. This UI preview does not mark outstanding stable-release hardware checks complete.
+## Documentation
+
+- [Repository structure](docs/STRUCTURE.md)
+- [Operations](docs/OPERATIONS.md)
+- [Packages and release process](docs/PACKAGING.md)
+- [Verification and limits](docs/VERIFICATION.md)
+- [Changelog](CHANGELOG.md)
+
+## Licensing
+
+See [LICENSE](LICENSE) and retained third-party notices. KagNode artwork retains its separate permission and brand policy; the application uses AGPL-3.0-only.

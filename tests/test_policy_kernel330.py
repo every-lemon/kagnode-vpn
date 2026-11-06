@@ -1,4 +1,5 @@
 """Real XFRM identifiers and netfilter rules, isolated from the host network."""
+
 import os
 from pathlib import Path
 import shutil
@@ -8,14 +9,17 @@ import unittest
 from test_manager import ROOT
 
 
-@unittest.skipUnless(os.geteuid() == 0 and shutil.which('unshare') and shutil.which('iptables'), 'requires network namespace privileges')
+@unittest.skipUnless(
+    os.geteuid() == 0 and shutil.which("unshare") and shutil.which("iptables"),
+    "requires network namespace privileges",
+)
 class KernelPolicyTests(unittest.TestCase):
     def test_kernel_reqid_spi_grants_rekey_and_deny_rules(self):
-        if not shutil.which('wg'):
-            self.skipTest('WireGuard tools required')
-        if subprocess.run(['unshare', '--net', 'true'], capture_output=True).returncode:
-            self.skipTest('network namespaces unavailable')
-        program = r'''
+        if not shutil.which("wg"):
+            self.skipTest("WireGuard tools required")
+        if subprocess.run(["unshare", "--net", "true"], capture_output=True).returncode:
+            self.skipTest("network namespaces unavailable")
+        program = r"""
 import json,sys,tempfile
 from pathlib import Path
 sys.path.insert(0,sys.argv[1])
@@ -104,6 +108,11 @@ with tempfile.TemporaryDirectory() as tmp:
  saved=command(['iptables-save','-t','filter']).stdout
  assert '-A INPUT -s 192.168.0.0/24 -j VPNSTACK-MAINT' not in saved
  print('XFRM, rekey, PPP interface reuse, policy overrides, revocation isolation and DNS exceptions verified')
-'''
-        result = subprocess.run(['unshare', '--net', sys.executable, '-c', program, str(ROOT / 'src')], capture_output=True, text=True, timeout=40)
+"""
+        result = subprocess.run(
+            ["unshare", "--net", sys.executable, "-c", program, str(ROOT / "src")],
+            capture_output=True,
+            text=True,
+            timeout=40,
+        )
         self.assertEqual(result.returncode, 0, result.stdout + result.stderr)

@@ -1,0 +1,8 @@
+{
+  "repository": "kagnode-vpn",
+  "version_file": "VERSION",
+  "version_pattern": "^([^\\s]+)",
+  "kind": "application",
+  "license": "AGPL-3.0-only",
+  "revision": 1
+}
