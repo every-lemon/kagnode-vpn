@@ -93,7 +93,7 @@ def validate_payload(payload):
         raise UpdateError("Embedded installer version mismatch.")
     runtime = payload["files"]["manage.py"]
     compile(runtime, "embedded-manage.py", "exec")
-    match = re.search(r"^_MODULE_ARCHIVE = '([^']+)'$", runtime, re.M)
+    match = re.search(r"^_MODULE_ARCHIVE = [\"']([A-Za-z0-9+/=]+)[\"']$", runtime, re.M)
     if not match:
         raise UpdateError("Embedded modules are missing.")
     modules = json.loads(gzip.decompress(base64.b64decode(match[1], validate=True)))

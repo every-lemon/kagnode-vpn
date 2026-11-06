@@ -469,6 +469,20 @@ class PayloadTests(unittest.TestCase):
         u.validate_payload(PAYLOAD)
         embedded.validate_payload(PAYLOAD)
 
+    def test_module_archive_accepts_both_python_quote_styles(self):
+        for quote in ['"', "'"]:
+            payload = json.loads(json.dumps(PAYLOAD))
+            payload["files"]["manage.py"] = re.sub(
+                r"^_MODULE_ARCHIVE = [\"']([^\"']+)[\"']$",
+                lambda match: "_MODULE_ARCHIVE = " + quote + match[1] + quote,
+                payload["files"]["manage.py"],
+                flags=re.M,
+            )
+            payload["sha256"]["manage.py"] = u.sha(
+                payload["files"]["manage.py"].encode()
+            )
+            u.validate_payload(payload)
+
     def test_modified_payload_rejected(self):
         payload = json.loads(json.dumps(PAYLOAD))
         payload["files"]["manage.py"] += "\n# modified"
