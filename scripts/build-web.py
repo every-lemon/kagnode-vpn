@@ -14,7 +14,8 @@ for node in module.body:
     elif isinstance(node,ast.AugAssign) and isinstance(node.target,ast.Name) and node.target.id=='STYLE':
         source['STYLE']+=ast.literal_eval(node.value)
 source['STYLE']+='\n'+(root/'web/kagnode-ui.css').read_text()+'\n'+(root/'web/product.css').read_text()
-source['SCRIPT']=(root/'web/theme.js').read_text()+'\n'+source['SCRIPT']
+source['STYLE']+='\n'+(root/'web/kagnode-scroll.css').read_text()
+source['SCRIPT']=(root/'web/kagnode-scroll.js').read_text()+'\n'+(root/'web/theme.js').read_text()+'\n'+source['SCRIPT']
 compiled={};hashes={}
 with tempfile.TemporaryDirectory(prefix='kagnode-vpn-ui-') as folder:
     for key,extension in [('STYLE','css'),('SCRIPT','js')]:
