@@ -96,3 +96,7 @@ Current combined release: **AGPL-3.0-only**. Prior MIT code retains its grants a
 The dashboard and profile-delivery pages use the shared KagNode black/white/blue UI, keyboard focus styles, responsive controls, and an appearance switch. Browser CSS and JavaScript are minified at build time and authorized by content hashes in the Content Security Policy. No source maps or remote UI dependencies are served. Readable sources and licenses stay in this repository; branding does not prevent inspection or lawful reuse.
 
 Rebuild with esbuild 0.28.2: `ESBUILD=/path/to/esbuild python3 scripts/build-web.py`. The resulting Python asset module ships with the worker, so Node.js is not a runtime dependency. This UI preview does not mark outstanding stable-release hardware checks complete.
+
+## Account profile integration preview
+
+Added optional KagNode Account display-name/photo linking, local administrator disable controls and private credential storage. Existing local account authentication and data remain independent.

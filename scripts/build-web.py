@@ -33,6 +33,8 @@ scroll = (
 source["SCRIPT"] = (
     scroll + "\n" + (root / "web/theme.js").read_text() + "\n" + source["SCRIPT"]
 )
+source["STYLE"] += "\n" + (root / "web/kagnode-account.css").read_text()
+source["SCRIPT"] += "\n" + (root / "web/kagnode-account.js").read_text()
 compiled = {}
 hashes = {}
 with tempfile.TemporaryDirectory(prefix="kagnode-vpn-ui-") as folder:

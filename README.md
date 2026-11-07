@@ -18,6 +18,8 @@ Packaging prereleases do not change the latest stable release or establish new h
 - Accounts, access controls, MFA and profile downloads.
 - Signed release manifests and explicit setup/update workflows.
 
+Optional KagNode Account linking syncs your display name and photo after explicit approval. Your local application administrator can disable it. Local sign-in and permissions stay independent.
+
 ## Requirements
 
 Ubuntu 24.04 amd64 for the existing native installer. WireGuard/IPsec operation requires the documented kernel, networking and firewall prerequisites.
@@ -70,6 +72,7 @@ Install the formatting dependencies from `requirements-format.txt`. Package buil
 - [Operations](docs/OPERATIONS.md)
 - [Packages and release process](docs/PACKAGING.md)
 - [Verification and limits](docs/VERIFICATION.md)
+- [KagNode Account linking](docs/ACCOUNT-SYNC.md)
 - [Changelog](CHANGELOG.md)
 
 ## Licensing

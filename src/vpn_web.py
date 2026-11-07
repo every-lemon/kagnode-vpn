@@ -484,6 +484,31 @@ class Controller:
         if op == "management-health":
             self.admin_context(request)
             return {"ready": True}
+        if op == "account-profile":
+            action = str(request.get("action", "state"))
+            self.authorize(request, mutate=action != "state")
+            identity = self.store.identity(request.get("session", ""))
+            from vpn_account_sync import ProfileLinks, AccountLinkError
+
+            links = getattr(self, "_profile_links", None)
+            if links is None:
+                links = self._profile_links = ProfileLinks(
+                    self.backend.repo.path.parent / "account-sync", "kagnode-vpn"
+                )
+            installation = self.state.get("admin_origin") or "http://" + request.get(
+                "host", ""
+            )
+            try:
+                return links.handle(
+                    identity["id"],
+                    identity["username"],
+                    identity["role"] == "owner",
+                    action,
+                    request.get("data", {}),
+                    installation,
+                )
+            except AccountLinkError as error:
+                raise WebError(str(error)) from None
         if op == "dashboard":
             self.authorize(request)
             targets = json.loads(request.get("targets", "[]"))
@@ -1702,7 +1727,7 @@ def page(title, body):
         + html.escape(FAVICON_URI, quote=True)
         + '"><style>'
         + STYLE
-        + '</style></head><body data-kn-manual-navigation class="kn-ui '
+        + '</style></head><body data-kn-account-app="vpn" data-kn-manual-navigation class="kn-ui '
         + ("management" if '<div class="app-shell"' in body else "standalone")
         + '"><header>'
         + brand_markup()
@@ -1981,6 +2006,44 @@ class Application:
                 headers.append(
                     ("Content-Disposition", 'inline; filename="profile.mobileconfig"')
                 )
+            elif self.role == "management" and path == "/manage/kagnode-account":
+                data = {}
+                if method == "POST":
+                    if (
+                        env.get("HTTP_TRANSFER_ENCODING")
+                        or env.get("CONTENT_TYPE", "").split(";")[0]
+                        != "application/json"
+                    ):
+                        raise WebError(
+                            "A bounded JSON account-link request is required."
+                        )
+                    length = int(env.get("CONTENT_LENGTH") or "0")
+                    if not 0 < length <= 4096:
+                        raise WebError("Account-link request exceeds its size limit.")
+                    raw = env["wsgi.input"].read(length)
+                    if len(raw) != length:
+                        raise WebError("Incomplete account-link request.")
+                    data = json.loads(raw)
+                    if not isinstance(data, dict):
+                        raise WebError("Invalid account-link request.")
+                elif method != "GET":
+                    raise WebError("Method not allowed.")
+                try:
+                    result = self.rpc(
+                        dict(
+                            context("account-profile"),
+                            action=str(data.get("action", "state")),
+                            data=data,
+                            csrf=env.get("HTTP_X_CSRF_TOKEN", ""),
+                        )
+                    )
+                    body = json.dumps(result).encode()
+                except WebError as error:
+                    status, body = (
+                        "400 Bad Request",
+                        json.dumps({"error": str(error)}).encode(),
+                    )
+                kind = "application/json"
             elif method == "GET" and path == "/health":
                 if self.role == "management":
                     self.rpc(dict(context("health"), op="management-health"))

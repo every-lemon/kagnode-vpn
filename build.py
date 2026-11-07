@@ -32,6 +32,7 @@ modules = {
         base64.b64encode((root / "src/vendor/ikev2.sh").read_bytes()).decode(),
     )
     for name in (
+        "vpn_account_sync",
         "vpn_clients",
         "vpn_web",
         "vpn_ui",

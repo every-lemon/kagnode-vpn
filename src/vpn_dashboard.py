@@ -388,9 +388,9 @@ def render(data, message="", view="overview", **options):
         + "</nav></aside>"
     )
     top = (
-        '<header class="topbar"><span>'
+        '<header class="topbar"><span><span class="kn-profile-avatar" data-kn-account-avatar>A</span> <span data-kn-account-name>'
         + e(actor.get("username", ""))
-        + " · "
+        + "</span> · "
         + e(actor.get("role", ""))
         + '</span><span class="session">Session expires in <strong data-management data-countdown="'
         + str(int(data.get("remaining", 1800)))
