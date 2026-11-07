@@ -457,6 +457,6 @@ class AdminTests(unittest.TestCase):
 
     def test_css_is_hash_authorized_and_management_referrer_fix_remains(self):
         _, headers, body = self.request("/manage/devices")
-        self.assertIn("style-src 'sha256-", headers["Content-Security-Policy"])
+        self.assertIn("style-src 'self' 'sha256-", headers["Content-Security-Policy"])
         self.assertNotIn("unsafe-inline", headers["Content-Security-Policy"])
         self.assertEqual(headers["Referrer-Policy"], "same-origin")
