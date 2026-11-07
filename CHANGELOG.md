@@ -1,3 +1,9 @@
+## Ecosystem update panel — packaging preview 2
+
+- Add local-administrator update checks, review and progress through KagNode CLI.
+- Keep local permissions, CSRF checks, data paths and native provisioning unchanged.
+- Source preview only; no new hardware qualification or native deployment claim.
+
 # 4.2.0-beta.1
 
 - Shared KagNode interface, consistent navigation and mobile controls.

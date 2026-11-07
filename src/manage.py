@@ -24,6 +24,7 @@ import time
 _MODULE_ARCHIVE = "@@MODULE_ARCHIVE@@"
 _MODULE_NAMES = (
     "vpn_account_sync",
+    "ecosystem_updates",
     "vpn_clients",
     "vpn_web",
     "vpn_ui",
