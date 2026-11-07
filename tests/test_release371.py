@@ -95,7 +95,8 @@ class ReleaseTests(unittest.TestCase):
             hashlib.sha256(admin.SCRIPT.encode()).digest()
         ).decode()
         self.assertIn(
-            "script-src 'sha256-" + digest + "'", headers["Content-Security-Policy"]
+            "script-src 'self' 'sha256-" + digest + "'",
+            headers["Content-Security-Policy"],
         )
         self.assertIn("connect-src 'self'", headers["Content-Security-Policy"])
         self.assertNotIn("'unsafe-inline'", headers["Content-Security-Policy"])

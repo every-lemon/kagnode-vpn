@@ -40,6 +40,7 @@ MAX_RPC = 8 * 1024**2
 # Explicit dependencies of the unprivileged loose-file HTTP workers. The root
 # broker's embedded module loader must not hide missing worker dependencies.
 WORKER_MODULES = (
+    "kagnode_core",
     "vpn_auth",
     "vpn_admin",
     "vpn_dashboard",
@@ -2054,8 +2055,6 @@ class Application:
                         if not profile.get("admin"):
                             raise WebError("Local administrator access is required.")
                         if method == "POST":
-                            import hmac
-
                             csrf = self.rpc(context("session-csrf"))["csrf"]
                             if not hmac.compare_digest(
                                 str(csrf), env.get("HTTP_X_CSRF_TOKEN", "")
