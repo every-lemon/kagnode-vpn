@@ -33,6 +33,7 @@ modules = {
     )
     for name in (
         "vpn_account_sync",
+        "ecosystem_updates",
         "vpn_clients",
         "vpn_web",
         "vpn_ui",
