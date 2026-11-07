@@ -64,7 +64,7 @@ def serve(app,**kwargs):
   assert NAME.encode() in document and PROJECT.encode() in document and b'<svg ' in document
   assert b'data:image/svg+xml,' in document
   assert "default-src 'none'" in response[1]['Content-Security-Policy']
-  assert "img-src data:" in response[1]['Content-Security-Policy']
+  assert "img-src 'self' data:" in response[1]['Content-Security-Policy']
   assert "'unsafe-inline'" not in response[1]['Content-Security-Policy']
  # The worker must render populated RPC responses using only its deployed
  # files; importing the development manager can hide missing dependencies.
