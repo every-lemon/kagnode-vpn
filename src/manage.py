@@ -25,6 +25,7 @@ _MODULE_ARCHIVE = "@@MODULE_ARCHIVE@@"
 _MODULE_NAMES = (
     "vpn_account_sync",
     "ecosystem_updates",
+    "kagnode_core",
     "vpn_clients",
     "vpn_web",
     "vpn_ui",

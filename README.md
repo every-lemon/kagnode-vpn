@@ -49,6 +49,8 @@ See [operations and existing setup instructions](docs/OPERATIONS.md) for the ful
 
 ## Configuration and storage
 
+Shared presentation uses [KagNode Core](docs/CORE.md), with a pinned local fallback and reviewed server adapters. Compatible stable UI patches have a separate local-administrator policy.
+
 Keep /etc/kagnode/vpn and /var/lib/kagnode/vpn separate from editable source. Existing migrations and package identities remain unchanged.
 
 ## Security

@@ -1,5 +1,6 @@
 """Persistent delivery on 9000 and session-authenticated management on 9001."""
 
+import kagnode_core
 import base64
 import contextlib
 import concurrent.futures
@@ -1781,7 +1782,17 @@ def form(action, csrf, fields, extra=""):
 def manager_html(data, message="", **options):
     from vpn_dashboard import render
 
-    return render(data, message, document=page, **options)
+    document = render(data, message, document=page, **options)
+    identity = data.get("identity", {})
+    return kagnode_core.inject(
+        document.decode(),
+        "vpn",
+        {
+            "authenticated": bool(identity.get("id")),
+            "subject": str(identity.get("id", "")),
+            "name": identity.get("username", ""),
+        },
+    ).encode()
 
 
 def log_worker_error(exc, role, route):
@@ -1871,11 +1882,11 @@ class Application:
             ("X-Content-Type-Options", "nosniff"),
             (
                 "Content-Security-Policy",
-                "default-src 'none'; img-src data:; style-src 'sha256-"
+                "default-src 'none'; img-src 'self' data:; style-src 'self' 'sha256-"
                 + style_hash
-                + "'; script-src 'sha256-"
+                + "'; script-src 'self' 'sha256-"
                 + script_hash
-                + "'; connect-src 'self'; form-action 'self'; frame-ancestors 'none'; base-uri 'none'",
+                + "'; connect-src 'self' https://nebulacoder.com; form-action 'self'; frame-ancestors 'none'; base-uri 'none'",
             ),
         ]
         status, kind = "200 OK", "text/html; charset=utf-8"
@@ -2006,7 +2017,10 @@ class Application:
                 headers.append(
                     ("Content-Disposition", 'inline; filename="profile.mobileconfig"')
                 )
-            elif self.role == "management" and path == "/manage/kagnode-account":
+            elif self.role == "management" and (
+                path == "/manage/kagnode-account"
+                or path.startswith("/api/v1/kagnode-core/")
+            ):
                 data = {}
                 if method == "POST":
                     if (
@@ -2029,14 +2043,34 @@ class Application:
                 elif method != "GET":
                     raise WebError("Method not allowed.")
                 try:
-                    result = self.rpc(
-                        dict(
-                            context("account-profile"),
-                            action=str(data.get("action", "state")),
-                            data=data,
-                            csrf=env.get("HTTP_X_CSRF_TOKEN", ""),
+                    is_core = path.startswith("/api/v1/kagnode-core/")
+                    if is_core:
+                        action = path.rsplit("/", 1)[-1]
+                        if method == "GET" and action != "status":
+                            raise WebError("Use POST for Core actions.")
+                        profile = self.rpc(
+                            dict(context("account-profile"), action="state")
                         )
-                    )
+                        if not profile.get("admin"):
+                            raise WebError("Local administrator access is required.")
+                        if method == "POST":
+                            import hmac
+
+                            csrf = self.rpc(context("session-csrf"))["csrf"]
+                            if not hmac.compare_digest(
+                                str(csrf), env.get("HTTP_X_CSRF_TOKEN", "")
+                            ):
+                                raise WebError("Invalid form authorization.")
+                        result = kagnode_core.manager_request("vpn", action, data)
+                    else:
+                        result = self.rpc(
+                            dict(
+                                context("account-profile"),
+                                action=str(data.get("action", "state")),
+                                data=data,
+                                csrf=env.get("HTTP_X_CSRF_TOKEN", ""),
+                            )
+                        )
                     body = json.dumps(result).encode()
                 except WebError as error:
                     status, body = (
@@ -2044,6 +2078,11 @@ class Application:
                         json.dumps({"error": str(error)}).encode(),
                     )
                 kind = "application/json"
+            elif method in ("GET", "HEAD") and path.startswith("/kagnode-core/"):
+                selected = kagnode_core.asset(path)
+                if not selected:
+                    raise WebError("Core asset unavailable.")
+                body, kind = selected
             elif method == "GET" and path == "/health":
                 if self.role == "management":
                     self.rpc(dict(context("health"), op="management-health"))
@@ -2543,6 +2582,25 @@ class Application:
                     status = "422 Unprocessable Entity"
                 except Exception:
                     pass
+        if kind.startswith("text/html"):
+            markup = re.sub(
+                r"<script\b[^>]*>[\s\S]*?</script>", "", body.decode(), flags=re.I
+            )
+            identity = re.search(
+                r"<span\s+data-kn-account-name(?:\s[^>]*)?>([^<]{0,200})</span>", markup
+            )
+            signed_in = '<div class="app-shell"' in markup
+            body = kagnode_core.inject(
+                body.decode(),
+                "vpn",
+                {
+                    "authenticated": signed_in,
+                    "subject": html.unescape(identity[1])
+                    if signed_in and identity
+                    else "",
+                },
+            ).encode()
+        headers.append(("Cross-Origin-Opener-Policy", "same-origin-allow-popups"))
         headers.extend(
             [
                 ("Content-Type", kind),

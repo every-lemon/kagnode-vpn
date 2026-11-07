@@ -160,8 +160,11 @@ class WebTests(unittest.TestCase):
             self.assertEqual(request("GET", "/cert/ca.pem", host="evil.test")[0], 403)
             landing = request("GET", "/?" + urlencode({"token": token}))
             self.assertEqual(landing[0], 200)
-            self.assertIn(b"KagNodeScroll", landing[1])
-            self.assertIn("script-src 'sha256-", landing[2]["Content-Security-Policy"])
+            self.assertIn(b'name="kagnode-core"', landing[1])
+            self.assertNotIn(b"&quot;subject&quot;:&quot;{", landing[1])
+            self.assertIn(
+                "script-src 'self' 'sha256-", landing[2]["Content-Security-Policy"]
+            )
             self.assertNotIn("'unsafe-inline'", landing[2]["Content-Security-Policy"])
             self.assertEqual(landing[2]["Referrer-Policy"], "no-referrer")
             confirm = self.store.inspect(token)["confirm"]
