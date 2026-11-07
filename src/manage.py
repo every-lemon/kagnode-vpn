@@ -23,6 +23,7 @@ import time
 # The standalone runtime carries these modules; development imports use sibling sources.
 _MODULE_ARCHIVE = "@@MODULE_ARCHIVE@@"
 _MODULE_NAMES = (
+    "vpn_account_sync",
     "vpn_clients",
     "vpn_web",
     "vpn_ui",

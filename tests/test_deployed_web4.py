@@ -1,6 +1,7 @@
 """Exercise the installed worker entrypoint without development modules on sys.path."""
 
 import json
+import re
 from pathlib import Path
 import subprocess
 import sys
@@ -18,14 +19,12 @@ class DeployedWorkerTests(unittest.TestCase):
                 (root / (name + ".py")).write_bytes(
                     (ROOT / "src" / (name + ".py")).read_bytes()
                 )
-            text = (
-                (ROOT / "src/vpn_web.py")
-                .read_text()
-                .replace(
-                    "PUBLIC = Path('/var/lib/kagnode/vpn/public')",
-                    "PUBLIC = Path(" + repr(str(root)) + ")",
-                )
+            text, replacements = re.subn(
+                r"""(?m)^PUBLIC = Path\(['"]/var/lib/kagnode/vpn/public['"]\)""",
+                "PUBLIC = Path(" + repr(str(root)) + ")",
+                (ROOT / "src/vpn_web.py").read_text(),
             )
+            self.assertEqual(replacements, 1)
             (root / "web.py").write_text(text)
             (root / "public.json").write_text(
                 json.dumps(
