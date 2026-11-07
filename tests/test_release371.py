@@ -1,5 +1,6 @@
 """Responsive policy scheduling, expiry, deletion recovery and lightweight dashboard."""
 
+import re
 import base64
 import hashlib
 import json
@@ -102,7 +103,10 @@ class ReleaseTests(unittest.TestCase):
         self.assertNotIn("'unsafe-inline'", headers["Content-Security-Policy"])
         self.assertIn(b"DOMContentLoaded", body)
         self.assertIn(b"document.hidden", body)
-        self.assertNotIn(b"<script src=", body)
+        # Core scripts are served from this application; external UI/CDN scripts remain forbidden.
+        scripts = re.findall(rb'<script[^>]+src="([^"]+)"', body)
+        self.assertTrue(scripts)
+        self.assertTrue(all(value.startswith(b"/kagnode-core/") for value in scripts))
 
     def test_policy_job_preempts_a_yielded_batch(self):
         backend_module.preview_batch(
