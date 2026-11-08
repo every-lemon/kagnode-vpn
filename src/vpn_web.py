@@ -526,8 +526,14 @@ class Controller:
             return {"ready": True}
         if op == "account-profile":
             action = str(request.get("action", "state"))
-            self.authorize(request, mutate=action != "state")
-            identity = self.store.identity(request.get("session", ""))
+            try:
+                self.authorize(request, mutate=action != "state")
+                identity = self.store.identity(request.get("session", ""))
+            except AuthError as error:
+                # Preserve the existing authorization decisions while giving
+                # account clients a useful status through the private socket.
+                status = 401 if str(error) == "Session expired. Sign in again." else 403
+                raise AccountProfileError(str(error), status) from None
             from vpn_account_sync import ProfileLinks, AccountLinkError
 
             links = getattr(self, "_profile_links", None)

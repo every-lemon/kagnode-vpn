@@ -36,8 +36,10 @@ class AccountRouteTests(unittest.TestCase):
         )
         self.controller = web.Controller(backend, self.store)
         self.delay = 0
+        self.issuer_requests = []
 
         def issuer(method, endpoint, data=None, token=None):
+            self.issuer_requests.append(endpoint)
             if endpoint == "device":
                 return {
                     "device_code": "D" * 43,
@@ -94,7 +96,7 @@ class AccountRouteTests(unittest.TestCase):
             rpc_call=lambda request: web.rpc(request, path=self.root / "rpc.sock"),
         )
 
-    def request(self, action=None, csrf=True):
+    def request(self, action=None, csrf=True, session=None, origin=None):
         body = json.dumps({"action": action}).encode() if action else b""
         env = {
             "REQUEST_METHOD": "POST" if action else "GET",
@@ -102,8 +104,9 @@ class AccountRouteTests(unittest.TestCase):
             "QUERY_STRING": "",
             "HTTP_HOST": "192.168.0.8:9001",
             "REMOTE_ADDR": "192.168.0.22",
-            "HTTP_ORIGIN": "http://192.168.0.8:9001",
-            "HTTP_COOKIE": "vpn_session=" + self.session,
+            "HTTP_ORIGIN": origin or "http://192.168.0.8:9001",
+            "HTTP_COOKIE": "vpn_session="
+            + (self.session if session is None else session),
             "HTTP_X_CSRF_TOKEN": self.csrf if csrf else "wrong",
             "CONTENT_TYPE": "application/json",
             "CONTENT_LENGTH": str(len(body)),
@@ -112,6 +115,24 @@ class AccountRouteTests(unittest.TestCase):
         result = []
         payload = b"".join(self.app(env, lambda status, headers: result.append(status)))
         return int(result[0].split()[0]), json.loads(payload)
+
+    def test_missing_and_expired_sessions_are_unauthorized_without_issuer_requests(
+        self,
+    ):
+        for session in ["", "not-a-session"]:
+            status, body = self.request(session=session)
+            self.assertEqual(status, 401, body)
+            self.assertEqual(body, {"error": "Session expired. Sign in again."})
+        with self.store.connect() as db:
+            db.execute("UPDATE admin_sessions SET created=created-28801")
+        self.assertEqual(self.request()[0], 401)
+        self.assertEqual(self.issuer_requests, [])
+
+    def test_invalid_csrf_and_cross_origin_requests_are_forbidden(self):
+        for options in [{"csrf": False}, {"origin": "https://untrusted.example"}]:
+            status, body = self.request("start", **options)
+            self.assertEqual(status, 403, body)
+        self.assertEqual(self.issuer_requests, [])
 
     def test_profile_expiry_crosses_the_real_socket_as_a_typed_http_error(self):
         status, body = self.request("poll")
