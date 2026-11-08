@@ -95,6 +95,7 @@
   "tests/browser_account_link.py",
   "tests/test_access4.py",
   "tests/test_account_sync.py",
+  "tests/test_account_sync_routes.py",
   "tests/test_adguard_health.py",
   "tests/test_admin350.py",
   "tests/test_auth340.py",

@@ -10,6 +10,7 @@ import hashlib
 import hmac
 import html
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
+from http import HTTPStatus
 import ipaddress
 import json
 import os
@@ -51,6 +52,31 @@ WORKER_MODULES = (
 
 
 from vpn_auth import AuthError as WebError
+
+
+class AccountProfileError(WebError):
+    """Safe profile API status carried across the private broker boundary."""
+
+    def __init__(self, message, status=400):
+        super().__init__(message)
+        self.status = (
+            status
+            if type(status) is int
+            and status in {400, 401, 403, 409, 410, 429, 502, 503}
+            else 400
+        )
+
+
+def rpc_failure(error):
+    result = {
+        "ok": False,
+        "error": str(error)
+        if isinstance(error, (WebError, ValueError, RuntimeError))
+        else "Operation failed; review local diagnostics.",
+    }
+    if isinstance(error, AccountProfileError):
+        result["profile_status"] = error.status
+    return result
 
 
 def digest(value):
@@ -276,7 +302,15 @@ CREATE TABLE IF NOT EXISTS flashes(session TEXT PRIMARY KEY,message TEXT NOT NUL
             )
 
 
-def rpc(request, path=SOCKET, timeout=5):
+def rpc(request, path=SOCKET, timeout=None):
+    if timeout is None:
+        # An approval may exchange tokens, fetch a profile and revoke rejected
+        # credentials. Each issuer request is bounded to eight seconds.
+        timeout = (
+            30
+            if isinstance(request, dict) and request.get("op") == "account-profile"
+            else 5
+        )
     wire = json.dumps(request).encode() + b"\n"
     if len(wire) > 65536:
         raise WebError("Request too large.")
@@ -299,6 +333,10 @@ def rpc(request, path=SOCKET, timeout=5):
     if result.get("busy"):
         raise ConnectionError("Backend busy; retry shortly.")
     if not result.get("ok"):
+        if "profile_status" in result:
+            raise AccountProfileError(
+                result.get("error", "Operation failed."), result["profile_status"]
+            )
         raise WebError(result.get("error", "Operation failed."))
     return result["result"]
 
@@ -510,7 +548,7 @@ class Controller:
                     installation,
                 )
             except AccountLinkError as error:
-                raise WebError(str(error)) from None
+                raise AccountProfileError(str(error), error.status) from None
         if op == "dashboard":
             self.authorize(request)
             targets = json.loads(request.get("targets", "[]"))
@@ -1664,12 +1702,7 @@ def control_serve(backend):
                 response = {"ok": True, "result": result}
             except Exception as exc:
                 # Backend errors omit raw command output. Never dump requests or stack frames.
-                response = {
-                    "ok": False,
-                    "error": str(exc)
-                    if isinstance(exc, (WebError, ValueError, RuntimeError))
-                    else "Operation failed; review local diagnostics.",
-                }
+                response = rpc_failure(exc)
             self.wfile.write(json.dumps(response).encode() + b"\n")
 
     class Server(BoundedRPCServer):
@@ -1810,6 +1843,7 @@ def log_worker_error(exc, role, route):
         "/manage/" + name
         for name in (
             "status",
+            "kagnode-account",
             "devices",
             "device",
             "users",
@@ -2073,7 +2107,9 @@ class Application:
                     body = json.dumps(result).encode()
                 except WebError as error:
                     status, body = (
-                        "400 Bad Request",
+                        f"{error.status} {HTTPStatus(error.status).phrase}"
+                        if isinstance(error, AccountProfileError)
+                        else "400 Bad Request",
                         json.dumps({"error": str(error)}).encode(),
                     )
                 kind = "application/json"
@@ -2515,6 +2551,13 @@ class Application:
                 ),
             )
             headers.append(("Retry-After", "3"))
+            if locals().get("path") == "/manage/kagnode-account":
+                body = json.dumps(
+                    {
+                        "error": "The account service is temporarily unavailable. Try again."
+                    }
+                ).encode()
+                kind = "application/json"
         except Exception as exc:
             if not isinstance(exc, (WebError, ValueError, RuntimeError)):
                 log_worker_error(exc, self.role, locals().get("path", ""))

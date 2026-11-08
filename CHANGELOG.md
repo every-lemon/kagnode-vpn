@@ -2,6 +2,8 @@
 
 ## Account link recovery preview
 
+Preserve typed profile failures across the private RPC broker and allow its bounded approval exchange to finish. Return retryable JSON when the broker is unavailable; retain existing native-operation timeouts.
+
 Resume pending profile links after reload, provide attempt-scoped cancellation and visible retry controls, and ignore late browser responses. Retain failed cleanup of issued profile tokens for administrator retry. Preserve local sign-in, permissions and existing data.
 
 ## Declared Core binding preview
