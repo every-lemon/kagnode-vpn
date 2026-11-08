@@ -1,5 +1,6 @@
 [
   ".github/dependabot.yml",
+  ".github/workflows/account-link.yml",
   ".github/workflows/ci.yml",
   ".github/workflows/packaging.yml",
   ".github/workflows/release.yml",
@@ -91,6 +92,7 @@
   "src/vpn_watchdog.py",
   "src/vpn_web.py",
   "tests/auth_fixture.py",
+  "tests/browser_account_link.py",
   "tests/test_access4.py",
   "tests/test_account_sync.py",
   "tests/test_adguard_health.py",
