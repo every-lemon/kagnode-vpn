@@ -1,3 +1,7 @@
+## Account API authentication status preview
+
+Return HTTP 401 for missing or expired management sessions and HTTP 403 for denied account-link actions, including invalid CSRF or origin. Preserve the existing authorization rules, reject requests before contacting the identity provider, and carry these statuses through the private broker.
+
 ## Ecosystem update panel — packaging preview 2
 
 ## Account link recovery preview
