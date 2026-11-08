@@ -1,5 +1,9 @@
 ## Account API authentication status preview
 
+## Update recovery status preview
+
+Show recovery details and metadata filenames in local administration. Suppress unsafe update actions, distinguish live operations from stale progress, preserve native-adapter guidance and clear repaired-cache warnings after a new release check.
+
 Return HTTP 401 for missing or expired management sessions and HTTP 403 for denied account-link actions, including invalid CSRF or origin. Preserve the existing authorization rules, reject requests before contacting the identity provider, and carry these statuses through the private broker.
 
 ## Ecosystem update panel — packaging preview 2
