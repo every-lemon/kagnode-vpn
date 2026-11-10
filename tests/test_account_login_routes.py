@@ -189,6 +189,27 @@ class ProviderRoutes(unittest.TestCase):
             self.request({"action": "start"}, origin="https://evil.test")[0], 403
         )
 
+    def test_disconnected_owner_cannot_be_restored_by_an_old_continuation(self):
+        from vpn_account_login import AccountSignIns
+        from vpn_account_sync import AccountLinkError
+
+        self.link()
+        signins = AccountSignIns(self.links)
+        browser = "B" * 43
+        attempt = signins.start(browser, "https://console.example.test")["attempt_id"]
+        signins.status(browser, attempt)
+        self.links.handle(self.uid, "Owner", False, "disconnect")
+        with self.links.db() as db:
+            db.execute(
+                "UPDATE sign_in_attempts SET link_stamp=? WHERE id=?",
+                (self.links.stamp(self.uid), attempt),
+            )
+        with self.assertRaises(AccountLinkError):
+            signins.finish(browser, attempt, self.uid)
+        self.assertFalse(
+            self.links.state(self.uid, "Owner", refresh=False)["connected"]
+        )
+
 
 if __name__ == "__main__":
     unittest.main()
