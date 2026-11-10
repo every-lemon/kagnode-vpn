@@ -24,6 +24,7 @@ import time
 _MODULE_ARCHIVE = "@@MODULE_ARCHIVE@@"
 _MODULE_NAMES = (
     "vpn_account_sync",
+    "vpn_account_login",
     "ecosystem_updates",
     "kagnode_core",
     "vpn_clients",

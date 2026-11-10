@@ -33,6 +33,7 @@ modules = {
     )
     for name in (
         "vpn_account_sync",
+        "vpn_account_login",
         "ecosystem_updates",
         "kagnode_core",
         "vpn_clients",

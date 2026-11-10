@@ -274,12 +274,11 @@ CREATE TABLE IF NOT EXISTS auth_events(id INTEGER PRIMARY KEY,time REAL NOT NULL
         with self.connect() as db:
             db.execute("DELETE FROM admin_sessions")
 
-    def login(self, password, peer="local", username="", code=""):
+    def login(self, password, peer="local", username="", code="", *, provider_id=None):
         if (
-            not isinstance(password, str)
-            or not 12 <= len(password) <= 256
-            or len(str(code)) > 128
-        ):
+            provider_id is None
+            and (not isinstance(password, str) or not 12 <= len(password) <= 256)
+        ) or len(str(code)) > 128:
             raise AuthError("Login failed or temporarily limited.")
         now = self.clock()
         with self.connect() as db:
@@ -295,8 +294,15 @@ CREATE TABLE IF NOT EXISTS auth_events(id INTEGER PRIMARY KEY,time REAL NOT NULL
             raise AuthError("Login temporarily limited. Retry in five minutes.")
         # Same cost for unknown usernames; a bounded semaphore limits memory/work.
         expected = row[1] if row else ("0" * 32 + ":" + "0" * 128)
-        actual = password_hash(password, expected.split(":")[0])
-        good_password = hmac.compare_digest(actual, expected)
+        # Only the private broker passes provider_id after consuming a fresh,
+        # browser-bound KagNode authorization. Local MFA remains mandatory.
+        good_password = (
+            bool(row and row[0] == provider_id)
+            if provider_id is not None
+            else hmac.compare_digest(
+                password_hash(password, expected.split(":")[0]), expected
+            )
+        )
         success = False
         with self.connect() as db:
             db.execute("BEGIN IMMEDIATE")

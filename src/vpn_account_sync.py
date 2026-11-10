@@ -175,14 +175,16 @@ class ProfileLinks:
             ).fetchone()
         return bool(row["enabled"]) and not self.configured_off(), row["generation"]
 
-    def stamp(self, uid):
-        with self.db() as db:
-            generation = db.execute(
-                "SELECT generation FROM policy WHERE id=1"
-            ).fetchone()[0]
-            row = db.execute(
-                "SELECT epoch FROM link_epochs WHERE local_id=?", (str(uid),)
-            ).fetchone()
+    def stamp(self, uid, connection=None):
+        if connection is None:
+            with self.db() as db:
+                return self.stamp(uid, db)
+        generation = connection.execute(
+            "SELECT generation FROM policy WHERE id=1"
+        ).fetchone()[0]
+        row = connection.execute(
+            "SELECT epoch FROM link_epochs WHERE local_id=?", (str(uid),)
+        ).fetchone()
         return str(generation) + ":" + str(row[0] if row else 0)
 
     def bump(self, uid):
@@ -217,7 +219,17 @@ class ProfileLinks:
             and not re.fullmatch(r"data:image/webp;base64,[A-Za-z0-9+/=]+", photo)
         ):
             raise AccountLinkError("The KagNode profile photo is invalid.", 502)
+        email = value.get("email", "") if value.get("email_verified") is True else ""
+        if (
+            not isinstance(email, str)
+            or len(email) > 254
+            or any(ord(char) < 32 or ord(char) == 127 for char in email)
+            or (email and not re.fullmatch(r"[^\s@<>]+@[^\s@<>]+\.[^\s@<>]+", email))
+        ):
+            raise AccountLinkError("The verified KagNode email is invalid.", 502)
         return {
+            "email": email,
+            "email_verified": bool(email),
             "issuer": self.issuer,
             "subject": value["subject"],
             "name": name,
@@ -350,6 +362,16 @@ class ProfileLinks:
                     (int(data["enabled"]),),
                 )
                 db.execute("DELETE FROM pending")
+                if db.execute(
+                    "SELECT 1 FROM sqlite_master WHERE type='table' AND name='sign_in_attempts'"
+                ).fetchone():
+                    for attempt in db.execute(
+                        "SELECT tokens FROM sign_in_attempts WHERE tokens!=''"
+                    ).fetchall():
+                        refresh = json.loads(attempt[0]).get("refresh_token")
+                        if refresh:
+                            tokens.append(refresh)
+                    db.execute("DELETE FROM sign_in_attempts")
                 for token in tokens:
                     db.execute(
                         "INSERT OR IGNORE INTO revocation_queue VALUES(?,?)",
@@ -368,8 +390,12 @@ class ProfileLinks:
             self.flush_revocations(1)
             return self.state(uid, name, admin, False)
         if action == "disconnect":
-            self.bump(uid)
             with self.db() as db:
+                db.execute("BEGIN IMMEDIATE")
+                db.execute(
+                    "INSERT INTO link_epochs VALUES(?,1) ON CONFLICT(local_id) DO UPDATE SET epoch=epoch+1",
+                    (uid,),
+                )
                 row = db.execute(
                     "SELECT refresh FROM links WHERE local_id=?", (uid,)
                 ).fetchone()
@@ -398,7 +424,11 @@ class ProfileLinks:
             result = self.transport(
                 "POST",
                 "device",
-                {"client_id": self.client, "installation": installation},
+                {
+                    "client_id": self.client,
+                    "installation": installation,
+                    "scope": "profile.read email.read",
+                },
             )
             if result.get("error"):
                 raise AccountLinkError(

@@ -308,7 +308,8 @@ def rpc(request, path=SOCKET, timeout=None):
         # credentials. Each issuer request is bounded to eight seconds.
         timeout = (
             30
-            if isinstance(request, dict) and request.get("op") == "account-profile"
+            if isinstance(request, dict)
+            and request.get("op") in ("account-profile", "account-login")
             else 5
         )
     wire = json.dumps(request).encode() + b"\n"
@@ -495,6 +496,16 @@ class Controller:
             )
         return identity["csrf"]
 
+    def account_links(self):
+        from vpn_account_sync import ProfileLinks
+
+        links = getattr(self, "_profile_links", None)
+        if links is None:
+            links = self._profile_links = ProfileLinks(
+                self.backend.repo.path.parent / "account-sync", "kagnode-vpn"
+            )
+        return links
+
     def handle(self, request, uid):
         op = request.get("op")
         if op == "ping":
@@ -524,6 +535,81 @@ class Controller:
         if op == "management-health":
             self.admin_context(request)
             return {"ready": True}
+        if op == "account-login":
+            self.admin_context(request)
+            from vpn_account_login import AccountSignIns
+            from vpn_account_sync import AccountLinkError
+
+            links = self.account_links()
+            signins = getattr(self, "_account_signins", None)
+            if signins is None:
+                signins = self._account_signins = AccountSignIns(links)
+            action, browser, attempt = (
+                request.get("action"),
+                request.get("browser", ""),
+                request.get("attempt_id", ""),
+            )
+            try:
+                if action == "state":
+                    return {"enabled": signins.enabled(), "csrf": signins.csrf(browser)}
+                if not hmac.compare_digest(
+                    signins.csrf(browser), str(request.get("login_csrf", ""))
+                ):
+                    raise AccountLinkError(
+                        "Reload the sign-in page and try again.", 403
+                    )
+                if action == "start":
+                    signins.rate(request.get("peer", ""))
+                    return signins.start(
+                        browser,
+                        self.state.get("admin_origin")
+                        or "http://" + request.get("host", ""),
+                    )
+                if action == "cancel":
+                    return signins.cancel(browser, attempt)
+                if action in ("status", "complete"):
+                    result = (
+                        signins.status(browser, attempt)
+                        if action == "status"
+                        else {"authorized": True}
+                    )
+                    if not result.get("authorized"):
+                        return result
+                    identity = signins.verified(browser, attempt)
+                    with self.store.connect() as db:
+                        local = db.execute(
+                            "SELECT id,username FROM administrators WHERE id=? AND enabled=1 AND enrolled=1",
+                            (identity["local_id"],),
+                        ).fetchone()
+                    if not local:
+                        signins.cancel(browser, attempt)
+                        raise AccountLinkError(
+                            "Link an existing approved administrator account from its settings first. Public administrator signup is unavailable.",
+                            403,
+                        )
+                    if action == "status":
+                        return {**result, "continuation": "mfa", "username": local[1]}
+                    session, csrf = self.store.login(
+                        "",
+                        request.get("peer", ""),
+                        local[1],
+                        request.get("code", ""),
+                        provider_id=local[0],
+                    )
+                    try:
+                        signins.finish(browser, attempt, local[0])
+                    except Exception:
+                        self.store.logout(session)
+                        raise
+                    return {
+                        "authorized": True,
+                        "continuation": "signed_in",
+                        "session": session,
+                        "csrf": csrf,
+                    }
+                raise AccountLinkError("Invalid sign-in action.")
+            except AccountLinkError as error:
+                raise AccountProfileError(str(error), error.status) from None
         if op == "account-profile":
             action = str(request.get("action", "state"))
             try:
@@ -536,11 +622,7 @@ class Controller:
                 raise AccountProfileError(str(error), status) from None
             from vpn_account_sync import ProfileLinks, AccountLinkError
 
-            links = getattr(self, "_profile_links", None)
-            if links is None:
-                links = self._profile_links = ProfileLinks(
-                    self.backend.repo.path.parent / "account-sync", "kagnode-vpn"
-                )
+            links = self.account_links()
             installation = self.state.get("admin_origin") or "http://" + request.get(
                 "host", ""
             )
@@ -1911,7 +1993,7 @@ class Application:
         # no-referrer can turn HTML form POST Origin into 'null'. Management
         # needs same-origin form attribution; public token links must not leak refs.
         referrer_policy = "same-origin" if self.role == "management" else "no-referrer"
-        from vpn_admin import STYLE, SCRIPT
+        from vpn_admin import STYLE, SCRIPT, brand_markup
 
         script_hash = base64.b64encode(
             hashlib.sha256(SCRIPT.encode()).digest()
@@ -2058,6 +2140,93 @@ class Application:
                 headers.append(
                     ("Content-Disposition", 'inline; filename="profile.mobileconfig"')
                 )
+            elif self.role == "management" and path == "/manage/kagnode-login":
+                browser = next(
+                    (
+                        part.strip().split("=", 1)[1]
+                        for part in env.get("HTTP_COOKIE", "").split(";")
+                        if part.strip().startswith("vpn_login=")
+                    ),
+                    "",
+                )
+                expected_origin = self.config.get(
+                    "admin_origin"
+                ) or "http://" + env.get("HTTP_HOST", "")
+                if method == "GET":
+                    if not re.fullmatch(r"[A-Za-z0-9_-]{43}", browser):
+                        browser = secrets.token_urlsafe(32)
+                    headers.append(
+                        (
+                            "Set-Cookie",
+                            "vpn_login="
+                            + browser
+                            + "; Path=/; HttpOnly; SameSite=Strict; Max-Age=600"
+                            + (
+                                "; Secure"
+                                if expected_origin.startswith("https://")
+                                else ""
+                            ),
+                        )
+                    )
+                    result = {
+                        **self.rpc(
+                            dict(
+                                context("account-login"),
+                                action="state",
+                                browser=browser,
+                            )
+                        ),
+                    }
+                elif method == "POST":
+                    if (
+                        not browser
+                        or env.get("HTTP_SEC_FETCH_SITE") in ("cross-site", "same-site")
+                        or env.get("HTTP_ORIGIN") not in (None, expected_origin)
+                    ):
+                        raise WebError("Invalid form authorization.")
+                    length = int(env.get("CONTENT_LENGTH") or "0")
+                    if (
+                        not 0 < length <= 4096
+                        or env.get("HTTP_TRANSFER_ENCODING")
+                        or env.get("CONTENT_TYPE", "").split(";")[0]
+                        != "application/json"
+                    ):
+                        raise WebError("A bounded JSON sign-in request is required.")
+                    data = json.loads(env["wsgi.input"].read(length))
+                    if not isinstance(data, dict):
+                        raise WebError("Invalid sign-in request.")
+                    result = self.rpc(
+                        dict(
+                            context("account-login"),
+                            browser=browser,
+                            login_csrf=env.get("HTTP_X_CSRF_TOKEN", ""),
+                            action=data.get("action"),
+                            attempt_id=data.get("attempt_id", ""),
+                            code=data.get("code", ""),
+                        )
+                    )
+                    if result.get("continuation") == "signed_in":
+                        headers.append(
+                            (
+                                "Set-Cookie",
+                                "vpn_session="
+                                + result["session"]
+                                + "; Path=/; HttpOnly; SameSite=Strict; Max-Age=28800"
+                                + (
+                                    "; Secure"
+                                    if expected_origin.startswith("https://")
+                                    else ""
+                                ),
+                            )
+                        )
+                        result = {
+                            "authorized": True,
+                            "continuation": "signed_in",
+                            "redirect": "/manage",
+                        }
+                else:
+                    raise WebError("Method not allowed.")
+                body, kind = json.dumps(result).encode(), "application/json"
             elif self.role == "management" and (
                 path == "/manage/kagnode-account"
                 or path.startswith("/api/v1/kagnode-core/")
@@ -2200,7 +2369,9 @@ class Application:
                 except WebError:
                     body = page(
                         "Management login",
-                        '<form method="post" action="/manage/login"><label>Username <input name="username" autocomplete="username" required></label><label>Password <input type="password" name="password" minlength="12" maxlength="256" autocomplete="current-password" required></label><label>Authenticator or recovery code <input name="code" autocomplete="one-time-code" required maxlength="128"></label><button>Log in</button></form><p>30-minute idle timeout · 8-hour maximum session. Background polling does not keep you signed in.</p><details><summary>Enroll a new administrator</summary><form method="post" action="/manage/enroll"><label>Private enrollment token<input name="token" required autocomplete="off"></label><button>Start enrollment</button></form></details>',
+                        '<section data-core-login data-core-login-product="KagNode VPN"><div class="kn-core-login-card"><div class="kn-core-login-heading">'
+                        + brand_markup()
+                        + '<h2>Sign in</h2><p>Approved local administrators only.</p></div><div class="kn-core-login-content"><form method="post" action="/manage/login"><label>Username <input name="username" autocomplete="username" required></label><label>Password <input type="password" name="password" minlength="12" maxlength="256" autocomplete="current-password" required></label><label>Authenticator or recovery code <input name="code" autocomplete="one-time-code" required maxlength="128"></label><button>Log in</button></form></div><div class="kn-core-login-provider" id="provider-login" hidden><button type="button" data-core-login-provider disabled>Login with KagNode</button><div data-core-login-status role="status"></div><form id="provider-mfa" hidden><p>KagNode identity confirmed. Enter your local authenticator or recovery code.</p><label>Authenticator or recovery code<input name="code" autocomplete="one-time-code" required maxlength="128"></label><button>Continue</button><p id="provider-error" role="alert"></p><a href="/manage">Use local sign-in</a></form></div><p>30-minute idle timeout · 8-hour maximum session. Background polling does not keep you signed in.</p><details><summary>Enroll a new administrator</summary><form method="post" action="/manage/enroll"><label>Private enrollment token<input name="token" required autocomplete="off"></label><button>Start enrollment</button></form></details></div></section>',
                     )
             elif method == "POST" and (
                 (
@@ -2557,7 +2728,10 @@ class Application:
                 ),
             )
             headers.append(("Retry-After", "3"))
-            if locals().get("path") == "/manage/kagnode-account":
+            if locals().get("path") in (
+                "/manage/kagnode-account",
+                "/manage/kagnode-login",
+            ):
                 body = json.dumps(
                     {
                         "error": "The account service is temporarily unavailable. Try again."
@@ -2574,6 +2748,10 @@ class Application:
                 else "Operation unavailable. Review local diagnostics."
             )
             body = page("Request unavailable", "<p>" + html.escape(message) + "</p>")
+            if locals().get("path") == "/manage/kagnode-login":
+                if isinstance(exc, AccountProfileError):
+                    status = f"{exc.status} {HTTPStatus(exc.status).phrase}"
+                body, kind = json.dumps({"error": message}).encode(), "application/json"
             denied = message == "Invalid form authorization." or message.startswith(
                 (
                     "Management is closed",
