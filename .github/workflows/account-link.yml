@@ -26,3 +26,7 @@ jobs:
       - run: python tests/browser_account_link.py
         env:
           KAGNODE_BROWSER_ENGINE: ${{ matrix.engine }}
+      - name: Local and KagNode sign-in journeys
+        run: python tests/browser_provider.py
+        env:
+          KAGNODE_BROWSER_ENGINE: ${{ matrix.engine }}

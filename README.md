@@ -8,11 +8,13 @@ Self-hosted VPN accounts, access policy, MFA and profile delivery.
 
 ## Release status
 
-Product source: **4.2.0-beta.1**. Packaging preview: **4.2.0-beta.1.packaging.9**.
+Product source: **4.2.0-beta.1**. Packaging preview: **4.2.0-beta.1.packaging.10**.
 
 Packaging prereleases do not change the latest stable release or establish new hardware or service compatibility. See [verification](docs/VERIFICATION.md) and [changelog](CHANGELOG.md).
 
 ## Features
+
+- Shared local sign-in and explicit Login with KagNode; local access and security requirements stay available. See [account sign-in](docs/ACCOUNT-SYNC.md).
 
 - WireGuard, IKEv2 and L2TP administration.
 - Accounts, access controls, MFA and profile downloads.

@@ -1,3 +1,10 @@
+# Web account sign-in preview
+
+- Use the locally served shared Core login frame with explicit KagNode confirmation and bounded, browser-bound sign-in attempts.
+- Refresh newly consented verified contact email alongside name and photo; preserve local policy, roles and offline sign-in.
+- VPN admits only an existing enabled, enrolled local administrator already linked to the verified KagNode subject. The local authenticator or recovery code remains mandatory. There is no public administrator signup, automatic approval, or role inferred from KagNode claims.
+- Web/source preview only; no native service or hardware qualification is implied.
+
 ## Account API authentication status preview
 
 ## Update recovery status preview
