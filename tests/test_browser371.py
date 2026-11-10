@@ -25,7 +25,7 @@ let delivery={dataset:{countdown:'3600',delivery:'abc'},textContent:''};
 let memory={textContent:''}, services={textContent:''}, updated={textContent:''};
 let payload={remaining:1790,health:{memory:{MemAvailable:128,MemTotal:512},services:{ipsec:'active'},sampled_at:10000},jobs:[],batches:[],links:[{hash:'abc',remaining:7200}]};
 const performance={now:()=>now};
-const document={readyState:'loading',hidden:false,
+const document={readyState:'loading',hidden:false,getElementById:()=>null,
  querySelector:selector=>selector==='[data-management]'?management:selector==='[data-memory]'?memory:selector==='[data-services]'?services:selector==='[data-updated]'?updated:null,
  querySelectorAll:selector=>selector.startsWith('[data-countdown]')?[delivery]:selector.startsWith('form ')?forms:[],
  addEventListener:(name,fn)=>listeners[name]=fn};
