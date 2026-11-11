@@ -4,6 +4,13 @@
 import ast, hashlib, json, os, subprocess, tempfile
 from pathlib import Path
 
+import runpy
+
+# Shared login markup is generated only from the pinned Core template.
+runpy.run_path(
+    str(Path(__file__).with_name("build-login.py")), run_name="core_login_build"
+)
+
 root = Path(__file__).resolve().parents[1]
 module = ast.parse((root / "src/vpn_admin.py").read_text())
 source = {}
@@ -68,5 +75,6 @@ output += (
     + repr(hashes)
     + "\n"
 )
+output += "LOGIN = " + repr((root / "web/login.html").read_text()) + "\n"
 (root / "src/vpn_ui_assets.py").write_text(output)
 print("Built fingerprinted VPN CSS and JavaScript without source maps.")

@@ -8,9 +8,11 @@ Self-hosted VPN accounts, access policy, MFA and profile delivery.
 
 ## Release status
 
-Product source: **4.2.0-beta.1**. Packaging preview: **4.2.0-beta.1.packaging.10**.
+Product source: **5.0.0**. Stable source/data release: **5.0.0**.
 
-Packaging prereleases do not change the latest stable release or establish new hardware or service compatibility. See [verification](docs/VERIFICATION.md) and [changelog](CHANGELOG.md).
+KagNode 5 uses the same locally served Core login frame and action icons across applications. Existing local sign-in, explicit KagNode connection, profile-sync policy, local roles and storage formats are preserved. The stable assets are reviewed source/data packages and the management web interface. Existing native networking remains unchanged by the web rollout; this release does not claim new protocol, router or real-device qualification.
+
+Earlier packaging prereleases remain available. The 5.0 stable release is limited to the verified source/data and web-interface scope; native and hardware evidence remains separate. See [verification](docs/VERIFICATION.md) and [changelog](CHANGELOG.md).
 
 ## Features
 
@@ -33,8 +35,8 @@ Download from [GitHub Releases](https://github.com/every-lemon/kagnode-vpn/relea
 | Payload | Formats | Support |
 | --- | --- | --- |
 | Complete source / artwork | `.tar.xz`, `.tar.gz`, `.zip` | Named top-level directory; manual setup |
-| Source preview | `.deb` | Source only; does not provision a service |
-| Source preview | `.rpm` | Rocky Linux 10 packaging preview; native services unverified |
+| Source/data | `.deb` | Source only; does not provision a service |
+| Source/data | `.rpm` | Rocky Linux 10 source package; no native service qualification |
 
 Existing signed `.deb`, setup.sh and update.sh workflows remain available for the documented Ubuntu target.
 
@@ -57,7 +59,7 @@ Keep /etc/kagnode/vpn and /var/lib/kagnode/vpn separate from editable source. Ex
 
 ## Security
 
-Use HTTPS and least-privilege accounts for hosted services. Keep secrets and user data out of Git. Preview packages are for inspection and controlled testing; native service and hardware claims remain limited to recorded verification. See [security guidance](docs/SECURITY.md).
+Use HTTPS and least-privilege accounts for hosted services. Keep secrets and user data out of Git. Source/data packages support inspection and manual setup; native service and hardware claims remain limited to recorded verification. See [security guidance](docs/SECURITY.md).
 
 ## Development and testing
 

@@ -3,7 +3,36 @@
 import argparse, json, os, sys, threading, time
 from pathlib import Path
 from playwright.sync_api import sync_playwright, expect
+
+# Real local password hashing and durable SQLite operations run under shared CI load.
+expect.set_options(timeout=20000)
 from wsgiref.simple_server import make_server
+
+
+def shared_login_style(page):
+    """Assert the real app uses the canonical frame and resolved action geometry."""
+    return page.evaluate(
+        """expected => {
+      const root=document.querySelector('[data-core-login]');
+      const card=root.querySelector('.kn-core-login-card');
+      const input=root.querySelector('input:not([type=hidden])');
+      const submit=root.querySelector('button[data-core-login-submit]');
+      const meta=JSON.parse(document.querySelector('meta[name=kagnode-core]').content);
+      if(meta.version!==expected) throw Error('Expected reviewed Core5');
+      if(!root.querySelector('.kn-core-login-mark')) throw Error('Missing canonical login mark');
+      if(document.querySelector('[data-theme-toggle],.theme-toggle,#theme-toggle,[data-kn-theme]')) throw Error('Standalone theme control remains');
+      const css=el=>{const c=getComputedStyle(el);return Object.fromEntries(['fontFamily','fontSize','fontWeight','lineHeight','borderRadius','backgroundColor','color','paddingTop','paddingRight','marginTop','marginBottom','minHeight'].map(k=>[k,c[k]]));};
+      const style={card:css(card),input:css(input),submit:css(submit),product:root.dataset.coreLoginProduct};
+      for (const part of ['card','input','submit']) {
+        if(style[part].marginTop!=='0px'||style[part].marginBottom!=='0px') throw Error('Host margin leaked into Core '+part);
+      }
+      if(style.input.fontWeight!=='400'||style.input.borderRadius!=='8px'||style.input.minHeight!=='44px') throw Error('Host input styling overrides Core');
+      if(style.submit.fontWeight!=='600'||style.submit.borderRadius!=='8px'||style.submit.minHeight!=='44px') throw Error('Host primary action styling overrides Core');
+      return style;
+    }""",
+        json.loads((ROOT / "core.lock.json").read_text())["baseline"],
+    )
+
 
 ROOT = Path(__file__).resolve().parents[1]
 parser = argparse.ArgumentParser()
@@ -121,9 +150,11 @@ try:
             errors = []
             context.route(
                 "**/*",
-                lambda route: route.continue_()
-                if route.request.url.startswith(origin)
-                else (external.append(route.request.url), route.abort()),
+                lambda route: (
+                    route.continue_()
+                    if route.request.url.startswith(origin)
+                    else (external.append(route.request.url), route.abort())
+                ),
             )
             page = context.new_page()
             page.bring_to_front()
@@ -154,9 +185,11 @@ try:
             )
             context.route(
                 "**/*",
-                lambda route: route.continue_()
-                if route.request.url.startswith(origin)
-                else (external.append(route.request.url), route.abort()),
+                lambda route: (
+                    route.continue_()
+                    if route.request.url.startswith(origin)
+                    else (external.append(route.request.url), route.abort())
+                ),
             )
             page = context.new_page()
             page.bring_to_front()
@@ -170,6 +203,7 @@ try:
             )
             page.get_by_role("button", name="Cancel connection").click()
             expect(provider).to_be_enabled()
+            login_style = shared_login_style(page)
             expect(page.locator("[data-core-login-status]")).to_contain_text(
                 "cancelled"
             )
@@ -198,6 +232,7 @@ try:
             report.append(
                 {
                     "engine": args.engine,
+                    "login_style": login_style,
                     "width": width,
                     "local_login": True,
                     "cancel": True,
