@@ -1,0 +1,48 @@
+<form method="post" action="/manage/login">
+  <div class="kn-core-login-field">
+    <label for="login-username">Username</label
+    ><input
+      id="login-username"
+      name="username"
+      autocomplete="username"
+      required
+    />
+  </div>
+  <div class="kn-core-login-field">
+    <label for="login-password">Password</label
+    ><input
+      id="login-password"
+      type="password"
+      name="password"
+      minlength="12"
+      maxlength="256"
+      autocomplete="current-password"
+      required
+    />
+  </div>
+  <div class="kn-core-login-field">
+    <label for="login-code">Authenticator or recovery code</label
+    ><input
+      id="login-code"
+      name="code"
+      autocomplete="one-time-code"
+      required
+      maxlength="128"
+    />
+  </div>
+  <button type="submit" data-core-login-submit>Sign in</button>
+</form>
+<p>
+  Only approved local administrators can sign in. Sessions end after 30 minutes
+  of inactivity or eight hours.
+</p>
+<details>
+  <summary>Enroll a new administrator</summary>
+  <form method="post" action="/manage/enroll">
+    <div class="kn-core-login-field">
+      <label for="login-token">Private enrollment token</label
+      ><input id="login-token" name="token" required autocomplete="off" />
+    </div>
+    <button type="submit">Start enrollment</button>
+  </form>
+</details>

@@ -1,0 +1,8 @@
+{
+  "target": "web/login.html",
+  "product": "KagNode. VPN",
+  "heading": "Sign in",
+  "description": "Use your account to continue to KagNode VPN.",
+  "id": "login-screen",
+  "hidden": false
+}

@@ -35,6 +35,22 @@ def select(releases, prerelease=False):
     for release in releases:
         if release.get("draft"):
             continue
+        # Source/data releases share version tags, but are not native upgrades.
+        # Asset presence only selects a candidate; fetch() still verifies its
+        # pinned-key signature and manifest before presenting or applying it.
+        assets = release.get("assets", [])
+        if not isinstance(assets, list) or not {
+            "manifest.json",
+            "manifest.sig",
+            "update.sh",
+        }.issubset(
+            {
+                item["name"]
+                for item in assets
+                if isinstance(item, dict) and isinstance(item.get("name"), str)
+            }
+        ):
+            continue
         name = release.get("tag_name", "")
         if not name.startswith("v"):
             continue
@@ -47,7 +63,7 @@ def select(releases, prerelease=False):
         ):
             candidates.append((order, release))
     if not candidates:
-        raise ValueError("No eligible release is published.")
+        raise ValueError("No eligible signed native release is published.")
     return max(candidates, key=lambda item: item[0])[1]
 
 

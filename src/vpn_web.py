@@ -1838,6 +1838,7 @@ def page(title, body):
     from vpn_brand import NAME, PROJECT, FAVICON_URI
 
     branded_title = title if NAME in title else title + " · " + NAME
+    login = "data-core-login" in body
     return (
         '<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width">'
         "<title>"
@@ -1852,21 +1853,25 @@ def page(title, body):
         + STYLE
         + '</style></head><body data-kn-account-app="vpn" data-kn-manual-navigation class="kn-ui '
         + ("management" if '<div class="app-shell"' in body else "standalone")
-        + '"><header>'
-        + brand_markup()
-        + "<h1>"
-        + html.escape(title)
-        + '</h1><p class="project-name">'
-        + html.escape(PROJECT)
-        + "</p></header><main>"
-        + body
-        + '</main><footer class="kn-product-signature kn-vpn-signature"><a href="https://nebulacoder.com"><strong>KagNode<span>.</span></strong> VPN</a><a href="https://github.com/every-lemon/kagnode-vpn" rel="noreferrer">Open source</a>'
+        + '">'
         + (
-            '<button type="button" data-kn-theme>Switch appearance</button>'
-            if "<script>" in body
-            else ""
+            ""
+            if login
+            else "<header>"
+            + brand_markup()
+            + "<h1>"
+            + html.escape(title)
+            + '</h1><p class="project-name">'
+            + html.escape(PROJECT)
+            + "</p></header><main>"
         )
-        + "</footer>"
+        + body
+        + (
+            ""
+            if login
+            else '</main><footer class="kn-product-signature kn-vpn-signature"><a href="https://nebulacoder.com"><strong>KagNode<span>.</span></strong> VPN</a><a href="https://github.com/every-lemon/kagnode-vpn" rel="noreferrer">Open source</a>'
+            + "</footer>"
+        )
         + ("" if "<script>" in body else "<script>" + SCRIPT + "</script>")
         + "</body></html>"
     ).encode()
@@ -2367,12 +2372,10 @@ class Application:
                     )
 
                 except WebError:
-                    body = page(
-                        "Management login",
-                        '<section data-core-login data-core-login-product="KagNode VPN"><div class="kn-core-login-card"><div class="kn-core-login-heading">'
-                        + brand_markup()
-                        + '<h2>Sign in</h2><p>Approved local administrators only.</p></div><div class="kn-core-login-content"><form method="post" action="/manage/login"><label>Username <input name="username" autocomplete="username" required></label><label>Password <input type="password" name="password" minlength="12" maxlength="256" autocomplete="current-password" required></label><label>Authenticator or recovery code <input name="code" autocomplete="one-time-code" required maxlength="128"></label><button>Log in</button></form></div><div class="kn-core-login-provider" id="provider-login" hidden><button type="button" data-core-login-provider disabled>Login with KagNode</button><div data-core-login-status role="status"></div><form id="provider-mfa" hidden><p>KagNode identity confirmed. Enter your local authenticator or recovery code.</p><label>Authenticator or recovery code<input name="code" autocomplete="one-time-code" required maxlength="128"></label><button>Continue</button><p id="provider-error" role="alert"></p><a href="/manage">Use local sign-in</a></form></div><p>30-minute idle timeout · 8-hour maximum session. Background polling does not keep you signed in.</p><details><summary>Enroll a new administrator</summary><form method="post" action="/manage/enroll"><label>Private enrollment token<input name="token" required autocomplete="off"></label><button>Start enrollment</button></form></details></div></section>',
-                    )
+                    from vpn_ui_assets import LOGIN
+
+                    body = page("Management login", LOGIN)
+
             elif method == "POST" and (
                 (
                     self.role == "management"

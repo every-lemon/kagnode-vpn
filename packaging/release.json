@@ -4,5 +4,8 @@
   "version_pattern": "^([^\\s]+)",
   "kind": "application",
   "license": "AGPL-3.0-only",
-  "revision": 10
+  "revision": 11,
+  "channel": "stable",
+  "upgrade_fixture_version": "4.2.0-beta.1.packaging.10",
+  "native_release": false
 }

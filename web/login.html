@@ -1,0 +1,73 @@
+<!-- core-login:start -->
+<main id="login-screen" data-core-login data-core-login-product="KagNode. VPN"><section class="kn-core-login-card"><header class="kn-core-login-heading"><svg class="kn-core-login-mark" viewBox="0 0 64 64" aria-hidden="true" focusable="false"><g transform="scale(2)" fill="#2563eb"><path d="M4 18C4 9 11 4 23 5L18 27C10 28 4 25 4 18Z"/><path d="m25 11 4 5-3 10-4-3Z"/></g></svg><p class="kn-core-login-product">KagNode. VPN</p><h1>Sign in</h1><p>Use your account to continue to KagNode VPN.</p></header><div class="kn-core-login-content"><form method="post" action="/manage/login">
+  <div class="kn-core-login-field">
+    <label for="login-username">Username</label
+    ><input
+      id="login-username"
+      name="username"
+      autocomplete="username"
+      required
+    />
+  </div>
+  <div class="kn-core-login-field">
+    <label for="login-password">Password</label
+    ><input
+      id="login-password"
+      type="password"
+      name="password"
+      minlength="12"
+      maxlength="256"
+      autocomplete="current-password"
+      required
+    />
+  </div>
+  <div class="kn-core-login-field">
+    <label for="login-code">Authenticator or recovery code</label
+    ><input
+      id="login-code"
+      name="code"
+      autocomplete="one-time-code"
+      required
+      maxlength="128"
+    />
+  </div>
+  <button type="submit" data-core-login-submit>Sign in</button>
+</form>
+<p>
+  Only approved local administrators can sign in. Sessions end after 30 minutes
+  of inactivity or eight hours.
+</p>
+<details>
+  <summary>Enroll a new administrator</summary>
+  <form method="post" action="/manage/enroll">
+    <div class="kn-core-login-field">
+      <label for="login-token">Private enrollment token</label
+      ><input id="login-token" name="token" required autocomplete="off" />
+    </div>
+    <button type="submit">Start enrollment</button>
+  </form>
+</details>
+</div><div class="kn-core-login-provider" id="provider-login" hidden><button type="button" data-core-login-provider disabled>
+  Login with KagNode
+</button>
+<div data-core-login-status role="status"></div>
+<form id="provider-mfa" hidden>
+  <p>
+    KagNode identity confirmed. Enter your local authenticator or recovery code.
+  </p>
+  <div class="kn-core-login-field">
+    <label for="login-code">Authenticator or recovery code</label
+    ><input
+      id="login-code"
+      name="code"
+      autocomplete="one-time-code"
+      required
+      maxlength="128"
+    />
+  </div>
+  <button type="submit" data-core-login-submit>Continue</button>
+  <p id="provider-error" role="alert"></p>
+  <a href="/manage">Use local sign-in</a>
+</form>
+</div></section></main>
+<!-- core-login:end -->

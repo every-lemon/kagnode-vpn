@@ -5,7 +5,27 @@ on:
 permissions:
   contents: read
 jobs:
+  scope:
+    runs-on: ubuntu-24.04
+    outputs:
+      native: ${{ steps.scope.outputs.native }}
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          persist-credentials: false
+      - id: scope
+        name: Require separately reviewed native release scope
+        run: |
+          python3 - <<'PYTHON'
+          import json, os
+          enabled=json.load(open('packaging/release.json')).get('native_release') is True
+          with open(os.environ['GITHUB_OUTPUT'],'a') as output:
+              output.write('native='+str(enabled).lower()+'\n')
+          print('Native release enabled.' if enabled else 'Source/web release only; native installers and qualification are excluded.')
+          PYTHON
   release:
+    needs: scope
+    if: needs.scope.outputs.native == 'true'
     runs-on: ubuntu-24.04
     environment: release
     permissions:
