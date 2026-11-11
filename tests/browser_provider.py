@@ -33,7 +33,11 @@ def shared_login_style(page):
       if(!root.querySelector('.kn-core-login-mark')) throw Error('Missing canonical login mark');
       if(document.querySelector('[data-theme-toggle],.theme-toggle,#theme-toggle,[data-kn-theme]')) throw Error('Standalone theme control remains');
       const css=el=>{const c=getComputedStyle(el);return Object.fromEntries(['fontFamily','fontSize','fontWeight','lineHeight','borderRadius','backgroundColor','color','paddingTop','paddingRight','marginTop','marginBottom','minHeight'].map(k=>[k,c[k]]));};
-      const style={card:css(card),input:css(input),submit:css(submit),product:root.dataset.coreLoginProduct};
+      const frame=getComputedStyle(root), bounds=card.getBoundingClientRect(), gutter=innerWidth<=480?12:20;
+      if(parseFloat(frame.paddingLeft)!==gutter || parseFloat(frame.paddingRight)!==gutter) throw Error('Host padding overrides canonical Core login frame');
+      if(frame.backgroundColor==='rgba(0, 0, 0, 0)' || frame.backgroundColor==='transparent') throw Error('Host cleared the Core login background');
+      if(bounds.left<gutter-1 || bounds.right>innerWidth-gutter+1) throw Error('Canonical login card lost viewport gutters');
+      const style={frame:css(root),card:css(card),input:css(input),submit:css(submit),product:root.dataset.coreLoginProduct};
       for (const part of ['card','input','submit']) {
         if(style[part].marginTop!=='0px'||style[part].marginBottom!=='0px') throw Error('Host margin leaked into Core '+part);
       }

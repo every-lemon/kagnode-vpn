@@ -8,7 +8,7 @@ Self-hosted VPN accounts, access policy, MFA and profile delivery.
 
 ## Release status
 
-Product source: **5.0.0**. Stable source/data release: **5.0.0**.
+Product source: **5.0.1**. Stable source/data release: **5.0.1**.
 
 KagNode 5 uses the same locally served Core login frame and action icons across applications. Existing local sign-in, explicit KagNode connection, profile-sync policy, local roles and storage formats are preserved. The stable assets are reviewed source/data packages and the management web interface. Existing native networking remains unchanged by the web rollout; this release does not claim new protocol, router or real-device qualification.
 

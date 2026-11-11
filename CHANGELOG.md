@@ -1,3 +1,9 @@
+# 5.0.1
+
+- Remove legacy sign-in CSS that overrode the shared Core background and mobile gutters.
+- Verify frame spacing and card bounds alongside fields/actions in both browser engines.
+- Keep the native runtime and data unchanged; this is a source/web interface patch.
+
 # 5.0.0
 
 - Use the canonical Core 5 login frame, fields, provider flow and action icons.
