@@ -2034,6 +2034,20 @@ class Application:
         ]
         status, kind = "200 OK", "text/html; charset=utf-8"
 
+        login_cookie_name = (
+            "__Host-vpn_login"
+            if self.config.get("admin_origin", "").startswith("https://")
+            else "vpn_login"
+        )
+
+        def login_browser():
+            values = [
+                part.strip().split("=", 1)[1]
+                for part in env.get("HTTP_COOKIE", "").split(";")
+                if part.strip().startswith(login_cookie_name + "=")
+            ]
+            return values[0] if len(values) == 1 else ""
+
         def context(op):
             session = ""
             for part in env.get("HTTP_COOKIE", "").split(";"):
@@ -2174,14 +2188,7 @@ class Application:
                     )
                     if any(len(values) != 1 for values in query.values()):
                         raise WebError("Invalid callback.")
-                    browser = next(
-                        (
-                            part.strip().split("=", 1)[1]
-                            for part in env.get("HTTP_COOKIE", "").split(";")
-                            if part.strip().startswith("vpn_login=")
-                        ),
-                        "",
-                    )
+                    browser = login_browser()
                     result = self.rpc(
                         dict(
                             context("account-login"),
@@ -2207,14 +2214,7 @@ class Application:
                 )
                 status, body = "303 See Other", b""
             elif self.role == "management" and path == "/manage/kagnode-login":
-                browser = next(
-                    (
-                        part.strip().split("=", 1)[1]
-                        for part in env.get("HTTP_COOKIE", "").split(";")
-                        if part.strip().startswith("vpn_login=")
-                    ),
-                    "",
-                )
+                browser = login_browser()
                 expected_origin = self.config.get(
                     "admin_origin"
                 ) or "http://" + env.get("HTTP_HOST", "")
@@ -2224,7 +2224,8 @@ class Application:
                     headers.append(
                         (
                             "Set-Cookie",
-                            "vpn_login="
+                            login_cookie_name
+                            + "="
                             + browser
                             + "; Path=/; HttpOnly; SameSite=Lax; Max-Age=600"
                             + (
