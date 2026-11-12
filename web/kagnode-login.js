@@ -2,6 +2,8 @@
 (() => {
   const box = document.getElementById("provider-login");
   if (!box) return;
+  let issuer = "https://nebulacoder.com",
+    ready = false;
   let csrf = "",
     enabled = false,
     attempt = "";
@@ -27,7 +29,7 @@
     return result;
   }
   window.KagNodeLoginHost = {
-    state: () => ({ enabled }),
+    state: () => ({ issuer, ready, enabled }),
     request,
     complete: (result) => {
       if (result.continuation !== "mfa") throw Error("Invalid continuation.");
@@ -70,6 +72,8 @@
   })
     .then((response) => (response.ok ? response.json() : null))
     .then((state) => {
+      issuer = state?.issuer || "https://nebulacoder.com";
+      ready = true;
       enabled = state?.enabled === true;
       csrf = state?.csrf || "";
       box.hidden = !enabled;

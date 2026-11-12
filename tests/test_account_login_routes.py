@@ -48,6 +48,15 @@ class ProviderRoutes(unittest.TestCase):
         self.csrf = ""
 
     def transport(self, method, endpoint, data=None, token=None):
+        if endpoint == "browser/start":
+            self.device = data
+            return {
+                "request_id": "Q" * 43,
+                "authorization_uri": self.links.issuer
+                + "/oauth/authorize?request="
+                + "Q" * 43,
+                "expires_in": 600,
+            }
         if endpoint == "device":
             self.device = data
             return {
@@ -133,6 +142,31 @@ class ProviderRoutes(unittest.TestCase):
         self.request()
         status, _, start = self.request({"action": "start"})
         self.assertEqual(status, 200, start)
+        from urllib.parse import urlencode
+
+        result = []
+        env = {
+            "REQUEST_METHOD": "GET",
+            "PATH_INFO": "/manage/auth/kagnode/callback",
+            "QUERY_STRING": urlencode(
+                {
+                    "state": self.device["state"],
+                    "iss": self.links.issuer,
+                    "code": "C" * 43,
+                }
+            ),
+            "HTTP_HOST": "192.168.0.8:9001",
+            "REMOTE_ADDR": "192.168.0.22",
+            "HTTP_COOKIE": self.cookie,
+            "wsgi.input": io.BytesIO(b""),
+        }
+        body = b"".join(
+            self.app(
+                env, lambda status, headers: result.append((status, dict(headers)))
+            )
+        )
+        self.assertEqual(result[0][0], "303 See Other", body)
+        self.assertEqual(result[0][1]["Referrer-Policy"], "no-referrer")
         status, _, ready = self.request(
             {"action": "status", "attempt_id": start["attempt_id"]}
         )

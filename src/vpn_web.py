@@ -551,7 +551,21 @@ class Controller:
             )
             try:
                 if action == "state":
-                    return {"enabled": signins.enabled(), "csrf": signins.csrf(browser)}
+                    return {
+                        "issuer": links.issuer,
+                        "enabled": signins.enabled(),
+                        "csrf": signins.csrf(browser),
+                    }
+                if action == "callback":
+                    return {
+                        "attempt_id": signins.callback(
+                            browser,
+                            request.get("state", ""),
+                            request.get("issuer", ""),
+                            request.get("authorization_code", ""),
+                            request.get("error", ""),
+                        )
+                    }
                 if not hmac.compare_digest(
                     signins.csrf(browser), str(request.get("login_csrf", ""))
                 ):
@@ -560,10 +574,11 @@ class Controller:
                     )
                 if action == "start":
                     signins.rate(request.get("peer", ""))
-                    return signins.start(
+                    return signins.start_browser(
                         browser,
                         self.state.get("admin_origin")
                         or "http://" + request.get("host", ""),
+                        "/manage/auth/kagnode/callback",
                     )
                 if action == "cancel":
                     return signins.cancel(browser, attempt)
@@ -2145,6 +2160,52 @@ class Application:
                 headers.append(
                     ("Content-Disposition", 'inline; filename="profile.mobileconfig"')
                 )
+            elif (
+                self.role == "management"
+                and path == "/manage/auth/kagnode/callback"
+                and method == "GET"
+            ):
+                target = {"kagnode_error": "invalid"}
+                try:
+                    query = parse_qs(
+                        env.get("QUERY_STRING", ""),
+                        keep_blank_values=True,
+                        max_num_fields=8,
+                    )
+                    if any(len(values) != 1 for values in query.values()):
+                        raise WebError("Invalid callback.")
+                    browser = next(
+                        (
+                            part.strip().split("=", 1)[1]
+                            for part in env.get("HTTP_COOKIE", "").split(";")
+                            if part.strip().startswith("vpn_login=")
+                        ),
+                        "",
+                    )
+                    result = self.rpc(
+                        dict(
+                            context("account-login"),
+                            action="callback",
+                            browser=browser,
+                            state=query.get("state", [""])[0],
+                            issuer=query.get("iss", [""])[0],
+                            authorization_code=query.get("code", [""])[0],
+                            error=query.get("error", [""])[0],
+                        )
+                    )
+                    target = {"kagnode_attempt": result["attempt_id"]}
+                except (WebError, ValueError, OSError):
+                    pass
+                headers = [
+                    (key, value) for key, value in headers if key != "Referrer-Policy"
+                ]
+                headers.extend(
+                    [
+                        ("Referrer-Policy", "no-referrer"),
+                        ("Location", "/manage?" + urlencode(target)),
+                    ]
+                )
+                status, body = "303 See Other", b""
             elif self.role == "management" and path == "/manage/kagnode-login":
                 browser = next(
                     (
@@ -2165,7 +2226,7 @@ class Application:
                             "Set-Cookie",
                             "vpn_login="
                             + browser
-                            + "; Path=/; HttpOnly; SameSite=Strict; Max-Age=600"
+                            + "; Path=/; HttpOnly; SameSite=Lax; Max-Age=600"
                             + (
                                 "; Secure"
                                 if expected_origin.startswith("https://")

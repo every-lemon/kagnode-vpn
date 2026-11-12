@@ -1,5 +1,5 @@
 <!-- core-login:start -->
-<main id="login-screen" data-core-login data-core-login-product="KagNode. VPN"><section class="kn-core-login-card"><header class="kn-core-login-heading"><svg class="kn-core-login-mark" viewBox="0 0 64 64" aria-hidden="true" focusable="false"><g transform="scale(2)" fill="#2563eb"><path d="M4 18C4 9 11 4 23 5L18 27C10 28 4 25 4 18Z"/><path d="m25 11 4 5-3 10-4-3Z"/></g></svg><p class="kn-core-login-product">KagNode. VPN</p><h1>Sign in</h1><p>Use your account to continue to KagNode VPN.</p></header><div class="kn-core-login-content"><form method="post" action="/manage/login">
+<main id="login-screen" data-core-login data-core-login-product="KagNode. VPN"><section class="kn-core-login-card"><header class="kn-core-login-heading"><svg class="kn-core-login-mark" viewBox="0 0 64 64" aria-hidden="true" focusable="false"><g transform="scale(2)" fill="#2563eb"><path d="M4 18C4 9 11 4 23 5L18 27C10 28 4 25 4 18Z"/><path d="m25 11 4 5-3 10-4-3Z"/></g></svg><p class="kn-core-login-product">KagNode. VPN</p><h1>Sign in</h1><p>Use your account to continue to KagNode VPN.</p></header><div class="kn-core-login-content"><form method="post" action="/manage/login" data-core-login-progressive>
   <div class="kn-core-login-field">
     <label for="login-username">Username</label
     ><input
@@ -9,6 +9,7 @@
       required
     />
   </div>
+  <div data-core-login-credentials>
   <div class="kn-core-login-field">
     <label for="login-password">Password</label
     ><input
@@ -30,6 +31,7 @@
       required
       maxlength="128"
     />
+  </div>
   </div>
   <button type="submit" data-core-login-submit>Sign in</button>
 </form>
