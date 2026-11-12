@@ -106,6 +106,7 @@
   "tests/test_backend330.py",
   "tests/test_batch370.py",
   "tests/test_browser371.py",
+  "tests/test_browser_login.py",
   "tests/test_clients.py",
   "tests/test_clients_real.py",
   "tests/test_clock.py",

@@ -48,6 +48,15 @@ class ProviderRoutes(unittest.TestCase):
         self.csrf = ""
 
     def transport(self, method, endpoint, data=None, token=None):
+        if endpoint == "browser/start":
+            self.device = data
+            return {
+                "request_id": "Q" * 43,
+                "authorization_uri": self.links.issuer
+                + "/oauth/authorize?request="
+                + "Q" * 43,
+                "expires_in": 600,
+            }
         if endpoint == "device":
             self.device = data
             return {
@@ -86,13 +95,21 @@ class ProviderRoutes(unittest.TestCase):
     def request(self, data=None, csrf=True, origin=None):
         raw = json.dumps(data).encode() if data else b""
         result = []
+        from urllib.parse import urlsplit
+
+        host = urlsplit(
+            self.config.get("admin_origin", "http://192.168.0.8:9001")
+        ).netloc
         env = {
             "REQUEST_METHOD": "POST" if data else "GET",
             "PATH_INFO": "/manage/kagnode-login",
             "QUERY_STRING": "",
-            "HTTP_HOST": "192.168.0.8:9001",
+            "HTTP_HOST": host,
             "REMOTE_ADDR": "192.168.0.22",
             "HTTP_ORIGIN": origin or "http://192.168.0.8:9001",
+            "HTTP_X_FORWARDED_PROTO": "https"
+            if self.config.get("admin_mode") == "https"
+            else "",
             "HTTP_COOKIE": self.cookie,
             "HTTP_X_CSRF_TOKEN": self.csrf if csrf else "wrong",
             "CONTENT_TYPE": "application/json",
@@ -133,6 +150,31 @@ class ProviderRoutes(unittest.TestCase):
         self.request()
         status, _, start = self.request({"action": "start"})
         self.assertEqual(status, 200, start)
+        from urllib.parse import urlencode
+
+        result = []
+        env = {
+            "REQUEST_METHOD": "GET",
+            "PATH_INFO": "/manage/auth/kagnode/callback",
+            "QUERY_STRING": urlencode(
+                {
+                    "state": self.device["state"],
+                    "iss": self.links.issuer,
+                    "code": "C" * 43,
+                }
+            ),
+            "HTTP_HOST": "192.168.0.8:9001",
+            "REMOTE_ADDR": "192.168.0.22",
+            "HTTP_COOKIE": self.cookie,
+            "wsgi.input": io.BytesIO(b""),
+        }
+        body = b"".join(
+            self.app(
+                env, lambda status, headers: result.append((status, dict(headers)))
+            )
+        )
+        self.assertEqual(result[0][0], "303 See Other", body)
+        self.assertEqual(result[0][1]["Referrer-Policy"], "no-referrer")
         status, _, ready = self.request(
             {"action": "status", "attempt_id": start["attempt_id"]}
         )
@@ -209,6 +251,39 @@ class ProviderRoutes(unittest.TestCase):
         self.assertFalse(
             self.links.state(self.uid, "Owner", refresh=False)["connected"]
         )
+
+    def test_https_return_uses_host_cookie_and_ignores_tossed_legacy_cookie(self):
+        self.config.update(
+            admin_origin="https://vpn.example.test",
+            admin_mode="https",
+            trusted_proxy="192.168.0.22",
+        )
+        self.cookie = "vpn_login=" + "A" * 43
+        status, headers, _ = self.request(origin="https://vpn.example.test")
+        self.assertEqual(status, 200)
+        issued = headers["Set-Cookie"]
+        self.assertTrue(issued.startswith("__Host-vpn_login="), issued)
+        for attribute in ("; Secure", "; HttpOnly", "; SameSite=Lax", "; Path=/"):
+            self.assertIn(attribute, issued)
+        self.assertNotIn("Domain=", issued)
+        self.assertNotIn("A" * 43, issued)
+        original_cookie = self.cookie
+        status, _, start = self.request(
+            {"action": "start"}, origin="https://vpn.example.test"
+        )
+        self.assertEqual(status, 200, start)
+        self.cookie = original_cookie.removeprefix("__Host-")
+        status, _, _ = self.request(
+            {"action": "status", "attempt_id": start["attempt_id"]},
+            origin="https://vpn.example.test",
+        )
+        self.assertEqual(status, 403)
+        self.cookie = original_cookie + "; " + original_cookie
+        status, _, _ = self.request(
+            {"action": "status", "attempt_id": start["attempt_id"]},
+            origin="https://vpn.example.test",
+        )
+        self.assertEqual(status, 403)
 
 
 if __name__ == "__main__":

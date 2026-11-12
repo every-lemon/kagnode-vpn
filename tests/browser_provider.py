@@ -76,12 +76,6 @@ if args.product == "vpn":
     def transport(method, endpoint, data=None, token=None):
         if flags["offline"]:
             raise AccountLinkError("Fixture issuer unavailable", 502)
-        if (
-            endpoint == "token"
-            and data.get("grant_type") != "refresh_token"
-            and flags["pending"]
-        ):
-            return {"error": "authorization_pending"}
         return original(method, endpoint, data, token)
 
     case.links.transport = transport
@@ -133,12 +127,6 @@ else:
     def transport(method, endpoint, data=None, token=None):
         if flags["offline"]:
             raise AccountLinkError("Fixture issuer unavailable", 502)
-        if (
-            endpoint == "token"
-            and data.get("grant_type") != "refresh_token"
-            and flags["pending"]
-        ):
-            return {"error": "authorization_pending"}
         return original(method, endpoint, data, token)
 
     case.links.transport = transport
@@ -163,14 +151,36 @@ try:
             )
             external = []
             errors = []
-            context.route(
-                "**/*",
-                lambda route: (
+
+            def guard(route):
+                url = route.request.url
+                if url.startswith(origin + "/"):
                     route.continue_()
-                    if route.request.url.startswith(origin)
-                    else (external.append(route.request.url), route.abort())
-                ),
-            )
+                    return
+                if url.startswith("https://nebulacoder.com/oauth/authorize?"):
+                    import html
+
+                    callback = html.escape(
+                        origin
+                        + (
+                            "/manage/auth/kagnode/callback"
+                            if args.product == "vpn"
+                            else "/auth/kagnode/callback"
+                        ),
+                        quote=True,
+                    )
+                    state = html.escape(case.device["state"], quote=True)
+                    route.fulfill(
+                        content_type="text/html",
+                        body=f'<h1>Fictional KagNode consent</h1><form method="get" action="{callback}"><input type="hidden" name="state" value="{state}"><input type="hidden" name="iss" value="https://nebulacoder.com"><button name="code" value="'
+                        + "C" * 43
+                        + '">Approve</button><button name="error" value="access_denied">Cancel</button></form>',
+                    )
+                    return
+                external.append(url)
+                route.abort()
+
+            context.route("**/*", guard)
             page = context.new_page()
             page.bring_to_front()
             page.on("pageerror", lambda error: errors.append(str(error)))
@@ -186,9 +196,12 @@ try:
             if args.product == "vpn":
                 form = page.locator('form[action="/manage/login"]')
                 form.locator("[name=username]").fill("owner")
+                expect(form.locator("[name=password]")).to_be_hidden()
+                expect(form.locator("[name=code]")).to_be_hidden()
+                form.get_by_role("button", name="Continue", exact=True).click()
                 form.locator("[name=password]").fill("test-management-password")
                 form.locator("[name=code]").fill(case.codes[1 + index * 2])
-                form.locator("button").click()
+                form.locator("button[type=submit]").click()
                 expect(page.locator(".app-shell")).to_be_visible(timeout=40000)
             else:
                 page.locator("#console-token").fill(case.token)
@@ -199,37 +212,57 @@ try:
             context = browser.new_context(
                 viewport={"width": width, "height": 950}, color_scheme="dark"
             )
-            context.route(
-                "**/*",
-                lambda route: (
+
+            def guard(route):
+                url = route.request.url
+                if url.startswith(origin + "/"):
                     route.continue_()
-                    if route.request.url.startswith(origin)
-                    else (external.append(route.request.url), route.abort())
-                ),
-            )
+                    return
+                if url.startswith("https://nebulacoder.com/oauth/authorize?"):
+                    import html
+
+                    callback = html.escape(
+                        origin
+                        + (
+                            "/manage/auth/kagnode/callback"
+                            if args.product == "vpn"
+                            else "/auth/kagnode/callback"
+                        ),
+                        quote=True,
+                    )
+                    state = html.escape(case.device["state"], quote=True)
+                    route.fulfill(
+                        content_type="text/html",
+                        body=f'<h1>Fictional KagNode consent</h1><form method="get" action="{callback}"><input type="hidden" name="state" value="{state}"><input type="hidden" name="iss" value="https://nebulacoder.com"><button name="code" value="'
+                        + "C" * 43
+                        + '">Approve</button><button name="error" value="access_denied">Cancel</button></form>',
+                    )
+                    return
+                external.append(url)
+                route.abort()
+
+            context.route("**/*", guard)
             page = context.new_page()
             page.bring_to_front()
             page.on("pageerror", lambda error: errors.append(str(error)))
             page.goto(origin + path)
             provider = page.locator("[data-core-login-provider]")
-            flags.update(pending=True, offline=False)
-            provider.click()
-            expect(page.get_by_text("ABCDE-12345", exact=True)).to_be_visible(
-                timeout=40000
-            )
-            page.get_by_role("button", name="Cancel connection").click()
-            expect(provider).to_be_enabled()
+            flags.update(pending=False, offline=False)
             login_style = shared_login_style(page)
+            provider.click()
+            page.get_by_role("button", name="Cancel", exact=True).click()
             expect(page.locator("[data-core-login-status]")).to_contain_text(
-                "cancelled"
+                "Unable to check the connection", timeout=20000
             )
+            expect(provider).to_be_enabled()
             flags["offline"] = True
             provider.click()
             expect(page.locator("[data-core-login-status]")).to_contain_text(
-                "Unable to connect", timeout=40000
+                "Unable to connect", timeout=20000
             )
-            flags.update(offline=False, pending=False)
+            flags["offline"] = False
             provider.click()
+            page.get_by_role("button", name="Approve", exact=True).click()
             if args.product == "vpn":
                 expect(page.locator("#provider-mfa")).to_be_visible(timeout=40000)
                 page.screenshot(

@@ -1,4 +1,4 @@
-<form method="post" action="/manage/login">
+<form method="post" action="/manage/login" data-core-login-progressive>
   <div class="kn-core-login-field">
     <label for="login-username">Username</label
     ><input
@@ -8,6 +8,7 @@
       required
     />
   </div>
+  <div data-core-login-credentials>
   <div class="kn-core-login-field">
     <label for="login-password">Password</label
     ><input
@@ -29,6 +30,7 @@
       required
       maxlength="128"
     />
+  </div>
   </div>
   <button type="submit" data-core-login-submit>Sign in</button>
 </form>
