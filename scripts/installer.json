@@ -1,0 +1,54 @@
+{
+  "platforms": [
+    [
+      "ubuntu",
+      "24.04"
+    ]
+  ],
+  "architectures": [
+    "x86_64"
+  ],
+  "required_paths": [
+    "data",
+    "configuration"
+  ],
+  "dependencies": [
+    "systemctl",
+    "python3"
+  ],
+  "warnings": [
+    "Only the listed application or native setup is performed. Existing data is never reset.",
+    "Setup requires local administrator review; source/data package installation alone does not start services."
+  ],
+  "kind": "native",
+  "user": "vpn-admin",
+  "fields": [],
+  "paths": {
+    "code": "/opt/kagnode/vpn",
+    "configuration": "/etc/kagnode/vpn/state.json",
+    "data": "/var/lib/kagnode/vpn",
+    "unit": "/etc/systemd/system/vpn-control.service"
+  },
+  "units": [
+    "vpn-control",
+    "vpn-management",
+    "vpn-downloads"
+  ],
+  "health_scope": "Installed management processes and project state. Client connectivity and tunnel behavior remain separate verification.",
+  "interactive": true,
+  "entrypoint": [
+    "/bin/bash",
+    "setup.sh",
+    "--install"
+  ],
+  "manual_steps": [
+    "Review the existing network prompts in the native installer terminal."
+  ],
+  "changes": [
+    "Hand off to the existing VPN installer in a real terminal",
+    "Existing installer owns its network choices, locks, configuration and native services",
+    "Confirm management health after the installer exits"
+  ],
+  "project": "vpn",
+  "version": "5.0.3"
+}
