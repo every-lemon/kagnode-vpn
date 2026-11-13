@@ -488,7 +488,7 @@ class Controller:
         )
         if (
             identity["role"] == "auditor"
-            and request.get("op") != "logout"
+            and request.get("op") not in ("logout", "core-notice")
             and (mutate or request.get("op") not in ("session-csrf", "audit-view"))
         ):
             raise WebError(
@@ -625,6 +625,26 @@ class Controller:
                 raise AccountLinkError("Invalid sign-in action.")
             except AccountLinkError as error:
                 raise AccountProfileError(str(error), error.status) from None
+        if op == "core-notice":
+            action = request.get("action")
+            if action not in ("read", "dismiss"):
+                raise WebError("Invalid notice action.")
+            self.authorize(request, mutate=action == "dismiss")
+            identity = self.store.identity(request.get("session", ""))
+            links = self.account_links()
+            try:
+                if action == "read":
+                    return kagnode_core.read_notice(
+                        "vpn", str(identity["id"]), links.notice_is_dismissed
+                    )
+                return kagnode_core.dismiss_notice(
+                    "vpn",
+                    str(identity["id"]),
+                    request.get("notice_id"),
+                    links.notice_dismiss,
+                )
+            except ValueError:
+                raise WebError("This update summary is no longer available.") from None
         if op == "account-profile":
             action = str(request.get("action", "state"))
             try:
@@ -2322,21 +2342,39 @@ class Application:
                 try:
                     is_core = path.startswith("/api/v1/kagnode-core/")
                     if is_core:
-                        action = path.rsplit("/", 1)[-1]
-                        if method == "GET" and action != "status":
-                            raise WebError("Use POST for Core actions.")
-                        profile = self.rpc(
-                            dict(context("account-profile"), action="state")
-                        )
-                        if not profile.get("admin"):
-                            raise WebError("Local administrator access is required.")
-                        if method == "POST":
-                            csrf = self.rpc(context("session-csrf"))["csrf"]
-                            if not hmac.compare_digest(
-                                str(csrf), env.get("HTTP_X_CSRF_TOKEN", "")
-                            ):
-                                raise WebError("Invalid form authorization.")
-                        result = kagnode_core.manager_request("vpn", action, data)
+                        if path in (
+                            "/api/v1/kagnode-core/whats-new",
+                            "/api/v1/kagnode-core/whats-new/dismiss",
+                        ):
+                            dismissal = path.endswith("/dismiss")
+                            if method != ("POST" if dismissal else "GET"):
+                                raise WebError("Method not allowed.")
+                            result = self.rpc(
+                                dict(
+                                    context("core-notice"),
+                                    action="dismiss" if dismissal else "read",
+                                    notice_id=data.get("id"),
+                                    csrf=env.get("HTTP_X_CSRF_TOKEN", ""),
+                                )
+                            )
+                        else:
+                            action = path.rsplit("/", 1)[-1]
+                            if method == "GET" and action != "status":
+                                raise WebError("Use POST for Core actions.")
+                            profile = self.rpc(
+                                dict(context("account-profile"), action="state")
+                            )
+                            if not profile.get("admin"):
+                                raise WebError(
+                                    "Local administrator access is required."
+                                )
+                            if method == "POST":
+                                csrf = self.rpc(context("session-csrf"))["csrf"]
+                                if not hmac.compare_digest(
+                                    str(csrf), env.get("HTTP_X_CSRF_TOKEN", "")
+                                ):
+                                    raise WebError("Invalid form authorization.")
+                            result = kagnode_core.manager_request("vpn", action, data)
                     else:
                         result = self.rpc(
                             dict(
