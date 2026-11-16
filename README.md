@@ -6,6 +6,19 @@
 
 Self-hosted VPN accounts, access policy, MFA and profile delivery.
 
+### What it looks like
+
+This README has no screenshot yet. The management interface talks to a running VPN backend (WireGuard, IKEv2 and L2TP services and a control socket), and there is no isolated test fixture that can show it with fictional data without touching a real VPN. A picture will be added once such a fixture exists. The shared sign-in page and navigation are the same as the other KagNode applications; see [KagNode Core](https://github.com/every-lemon/kagnode-core).
+
+### How it works
+
+1. **You run the VPN services.** KagNode VPN administers WireGuard, IKEv2 and L2TP on your own server. It does not replace the VPN software; it manages accounts and policy for it.
+2. **Accounts and access.** Administrators create accounts, set access controls and require MFA. People download their own connection profiles.
+3. **Split by privilege.** A control process with the needed privileges does the native work, and a separate web process serves the pages and talks to it over a local socket.
+4. **Signed updates.** Release manifests are signed and setup and update steps are explicit workflows you start, not silent background changes.
+5. **Sign-in stays local.** Local sign-in always works. Optional KagNode Account linking syncs your display name and photo after you approve it, and the local administrator can turn it off.
+6. **Scope.** The stable 5.0 release covers the source and data packages and the management web interface. Native and hardware evidence is recorded separately in the verification notes.
+
 ## Release status
 
 Product source: **5.0.4**. Stable source/data release: **5.0.4**.
@@ -36,15 +49,15 @@ Ubuntu 24.04 amd64 for the existing native installer. WireGuard/IPsec operation 
 
 Download from [GitHub Releases](https://github.com/every-lemon/kagnode-vpn/releases). Verify `SHA256SUMS` before extracting or installing a package.
 
-| Payload | Formats | Support |
-| --- | --- | --- |
-| Complete source / artwork | `.tar.xz`, `.tar.gz`, `.zip` | Named top-level directory; manual setup |
-| Source/data | `.deb` | Source only; does not provision a service |
-| Source/data | `.rpm` | Rocky Linux 10 source package; no native service qualification |
+| Payload                   | Formats                      | Support                                                        |
+| ------------------------- | ---------------------------- | -------------------------------------------------------------- |
+| Complete source / artwork | `.tar.xz`, `.tar.gz`, `.zip` | Named top-level directory; manual setup                        |
+| Source/data               | `.deb`                       | Source only; does not provision a service                      |
+| Source/data               | `.rpm`                       | Rocky Linux 10 source package; no native service qualification |
 
 Existing signed `.deb`, setup.sh and update.sh workflows remain available for the documented Ubuntu target.
 
-Source packages install under `/usr/share/kagnode/`; they do not replace an existing application, migrate data, start services or configure networking.  See [package details](docs/PACKAGING.md).
+Source packages install under `/usr/share/kagnode/`; they do not replace an existing application, migrate data, start services or configure networking. See [package details](docs/PACKAGING.md).
 
 ## Usage
 
