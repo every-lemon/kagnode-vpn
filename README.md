@@ -2,44 +2,32 @@
 
 # KagNode VPN
 
-## Overview
-
 Self-hosted VPN accounts, access policy, MFA and profile delivery.
 
-### What it looks like
+## Overview
 
-This README has no screenshot yet. The management interface talks to a running VPN backend (WireGuard, IKEv2 and L2TP services and a control socket), and there is no isolated test fixture that can show it with fictional data without touching a real VPN. A picture will be added once such a fixture exists. The shared sign-in page and navigation are the same as the other KagNode applications; see [KagNode Core](https://github.com/every-lemon/kagnode-core).
+This README has no screenshot yet.
 
-### How it works
-
-1. **You run the VPN services.** KagNode VPN administers WireGuard, IKEv2 and L2TP on your own server. It does not replace the VPN software; it manages accounts and policy for it.
-2. **Accounts and access.** Administrators create accounts, set access controls and require MFA. People download their own connection profiles.
-3. **Split by privilege.** A control process with the needed privileges does the native work, and a separate web process serves the pages and talks to it over a local socket.
-4. **Signed updates.** Release manifests are signed and setup and update steps are explicit workflows you start, not silent background changes.
-5. **Sign-in stays local.** Local sign-in always works. Optional KagNode Account linking syncs your display name and photo after you approve it, and the local administrator can turn it off.
-6. **Scope.** The stable 5.0 release covers the source and data packages and the management web interface. Native and hardware evidence is recorded separately in the verification notes.
+| Step                     | Detail                                                                                                                                       |
+| ------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------- |
+| You run the VPN services | KagNode VPN administers WireGuard, IKEv2 and L2TP on your own server.                                                                        |
+| Accounts and access      | Administrators create accounts, set access controls and require MFA.                                                                         |
+| Split by privilege       | A control process with the needed privileges does the native work, and a separate web process serves the pages and talks to it over a local… |
+| Signed updates           | Release manifests are signed and setup and update steps are explicit workflows you start, not silent background changes.                     |
+| Sign-in stays local      | Local sign-in always works.                                                                                                                  |
+| Scope                    | The stable 5.0 release covers the source and data packages and the management web interface.                                                 |
 
 ## Release status
 
 Product source: **5.0.4**. Stable source/data release: **5.0.4**.
 
-KagNode 5 uses the same locally served Core login frame and action icons across applications. Existing local sign-in, explicit KagNode connection, profile-sync policy, local roles and storage formats are preserved. The stable assets are reviewed source/data packages and the management web interface. Existing native networking remains unchanged by the web rollout; this release does not claim new protocol, router or real-device qualification.
-
-Earlier packaging prereleases remain available. The 5.0 stable release is limited to the verified source/data and web-interface scope; native and hardware evidence remains separate. See [verification](docs/VERIFICATION.md) and [changelog](CHANGELOG.md).
-
-Browser sign-in now returns from KagNode to this application in the same tab, using a one-use authorization code with S256 PKCE. Local email/username forms reveal the password step after identity entry; vault setup, MFA and key-only controls preserve their existing requirements. See [account sign-in](docs/ACCOUNT-SYNC.md).
+KagNode 5 uses the same locally served Core login frame and action icons across applications.
 
 ## Features
-
-Shared Core controls and locally authorized update summaries are integrated where the application supports automatic UI updates. Embedded or account-free products do not invent automatic update events.
-
-- Shared local sign-in and explicit Login with KagNode; local access and security requirements stay available. See [account sign-in](docs/ACCOUNT-SYNC.md).
 
 - WireGuard, IKEv2 and L2TP administration.
 - Accounts, access controls, MFA and profile downloads.
 - Signed release manifests and explicit setup/update workflows.
-
-Optional KagNode Account linking syncs your display name and photo after explicit approval. Your local application administrator can disable it. Local sign-in and permissions stay independent.
 
 ## Requirements
 
@@ -47,17 +35,13 @@ Ubuntu 24.04 amd64 for the existing native installer. WireGuard/IPsec operation 
 
 ## Installation and downloads
 
-Download from [GitHub Releases](https://github.com/every-lemon/kagnode-vpn/releases). Verify `SHA256SUMS` before extracting or installing a package.
+Take releases only from [GitHub Releases](https://github.com/every-lemon/kagnode-vpn/releases) and verify `SHA256SUMS`.
 
 | Payload                   | Formats                      | Support                                                        |
 | ------------------------- | ---------------------------- | -------------------------------------------------------------- |
 | Complete source / artwork | `.tar.xz`, `.tar.gz`, `.zip` | Named top-level directory; manual setup                        |
 | Source/data               | `.deb`                       | Source only; does not provision a service                      |
 | Source/data               | `.rpm`                       | Rocky Linux 10 source package; no native service qualification |
-
-Existing signed `.deb`, setup.sh and update.sh workflows remain available for the documented Ubuntu target.
-
-Source packages install under `/usr/share/kagnode/`; they do not replace an existing application, migrate data, start services or configure networking. See [package details](docs/PACKAGING.md).
 
 ## Usage
 
@@ -72,11 +56,9 @@ See [operations and existing setup instructions](docs/OPERATIONS.md) for the ful
 
 Shared presentation uses [KagNode Core](docs/CORE.md), with a pinned local fallback and reviewed server adapters. Compatible stable UI patches have a separate local-administrator policy.
 
-Keep /etc/kagnode/vpn and /var/lib/kagnode/vpn separate from editable source. Existing migrations and package identities remain unchanged.
-
 ## Security
 
-Use HTTPS and least-privilege accounts for hosted services. Keep secrets and user data out of Git. Source/data packages support inspection and manual setup; native service and hardware claims remain limited to recorded verification. See [security guidance](docs/SECURITY.md).
+Use HTTPS and least-privilege accounts for hosted services. Keep secrets and user data out of Git.
 
 ## Development and testing
 
@@ -87,20 +69,18 @@ python3 scripts/format_source.py --check
 python3 scripts/release.py --output dist/packages
 ```
 
-Install the formatting dependencies from `requirements-format.txt`. Package building additionally needs `dpkg-deb`, `rpmbuild`, XZ support and, for CLI binaries, Go. Read [the repository map](docs/STRUCTURE.md) before editing generated files.
-
 ## Documentation
 
-- [Reviewed local setup](docs/INSTALLER.md)
-
-- [Ecosystem installation and updates](docs/ECOSYSTEM.md)
-
-- [Repository structure](docs/STRUCTURE.md)
-- [Operations](docs/OPERATIONS.md)
-- [Packages and release process](docs/PACKAGING.md)
-- [Verification and limits](docs/VERIFICATION.md)
-- [KagNode Account linking](docs/ACCOUNT-SYNC.md)
-- [Changelog](CHANGELOG.md)
+|                                    |                                              |
+| ---------------------------------- | -------------------------------------------- |
+| Reviewed local setup               | [docs/INSTALLER.md](docs/INSTALLER.md)       |
+| Ecosystem installation and updates | [docs/ECOSYSTEM.md](docs/ECOSYSTEM.md)       |
+| Repository structure               | [docs/STRUCTURE.md](docs/STRUCTURE.md)       |
+| Operations                         | [docs/OPERATIONS.md](docs/OPERATIONS.md)     |
+| Packages and release process       | [docs/PACKAGING.md](docs/PACKAGING.md)       |
+| Verification and limits            | [docs/VERIFICATION.md](docs/VERIFICATION.md) |
+| KagNode Account linking            | [docs/ACCOUNT-SYNC.md](docs/ACCOUNT-SYNC.md) |
+| Changelog                          | [CHANGELOG.md](CHANGELOG.md)                 |
 
 ## Licensing
 
